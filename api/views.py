@@ -2,8 +2,10 @@ import json
 
 from django.contrib.auth import get_user_model
 from rest_framework import views, viewsets
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
+from api.permissions import IsAdminOrReadOnly
 from api.serializers import UserSerializer, ProductCategorySerializer, ProductSerializer, CreateProductSerializer, \
     CheckoutSerializer
 from app.models import ProductCategory, Product, Cart
@@ -11,6 +13,7 @@ from app.utils import cart_data
 
 
 class ProductCategoryApiView(views.APIView):
+    permission_classes = [IsAdminOrReadOnly]
 
     @classmethod
     def get_extra_actions(cls):
@@ -33,6 +36,7 @@ class ProductApiView(viewsets.ModelViewSet):
     detail_serializer = ProductSerializer
     create_serializer = CreateProductSerializer
     queryset = Product.objects.all()
+    permission_classes = [IsAdminOrReadOnly]
 
     def dispatch(self, request, *args, **kwargs):
         if request.method.lower() in ['post', 'put', 'patch']:
@@ -46,7 +50,17 @@ class ProductApiView(viewsets.ModelViewSet):
 
 class UserApiView(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    queryset = get_user_model().objects.all()
+
+    def get_queryset(self):
+        users = get_user_model().objects.all()
+        if self.request.user.is_staff:
+            return users
+        return users.filter(pk=self.request.user.pk)
+
+    def get_permissions(self):
+        if self.action in ('create', 'destroy'):
+            return [IsAdminUser()]
+        return super(UserApiView, self).get_permissions()
 
 
 class CheckoutApiView(views.APIView):

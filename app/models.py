@@ -6,11 +6,11 @@ from django.template.defaultfilters import slugify
 
 
 def user_upload_to(obj, file_name):
-    return f"media/{obj.username}/{file_name}"
+    return f"users/{obj.username}/{file_name}"
 
 
 def product_upload_to(obj, file_name):
-    return f"static/img/{obj.category}/{file_name}"
+    return f"products/{obj.category}/{file_name}"
 
 
 class UserProfile(AbstractUser):
@@ -67,7 +67,7 @@ class Product(SameField):
 
 class Image(models.Model):
     product = models.ForeignKey('app.Product', on_delete=models.CASCADE)
-    images = models.ImageField(upload_to='static/img/images/', null=True, blank=True)
+    images = models.ImageField(upload_to='products/images/', null=True, blank=True)
 
     def __str__(self):
         return self.product.title

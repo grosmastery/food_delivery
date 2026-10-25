@@ -1,35 +1,34 @@
-const user_id = $('#user_id').val();
 const room_id = $('#room_id').val();
 console.log(room_id)
 
-const ws = new WebSocket(`ws:${window.location.host}/ws/chat/`);
+const ws_scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${ws_scheme}://${window.location.host}/ws/chat/${room_id}/`);
+
+function chat_line(author, text) {
+    return $('<div class="sent-messages">')
+        .append($('<b>').text(`${author}:`))
+        .append(' ')
+        .append($('<span>').text(text));
+}
 
 ws.onopen = function () {
-    ws.send(JSON.stringify({'type': 'connected', 'user_id': user_id}));
+    ws.send(JSON.stringify({'type': 'connected'}));
 };
 
 ws.onmessage = function (e) {
     const data = JSON.parse(e.data);
     if (data.type === 'connected') {
-        const bot_message = $('<div class="sent-messages">' +
-            `                   <b>Bot:</b> <span>${data.message}</span>` +
-            '                </div>');
-        $('#chat-view').append(bot_message);
+        $('#chat-view').append(chat_line('Bot', data.message));
     } else {
         const message_data = JSON.parse(data.message);
-        const new_message = $('<div class="sent-messages">' +
-            `                   <b>${message_data.username}:</b> <span>${message_data.text}</span>` +
-            '                </div>');
-        $('#chat-view').append(new_message);
+        $('#chat-view').append(chat_line(message_data.username, message_data.text));
     }
 };
 
 $('#send-message').click(function () {
     ws.send(JSON.stringify({
         'type': "message",
-        'message': $('#message').val(),
-        'user_id': user_id,
-        'room_id': room_id
+        'message': $('#message').val()
     }));
     $('#message').val('');
 });

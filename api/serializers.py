@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         exclude = (
             'avatar', 'slug', 'order_history', 'groups', 'user_permissions', 'date_joined', 'last_login', 'password',
             'is_active')
+        read_only_fields = ('is_staff', 'is_superuser', 'bonus_coins', 'stripe_customer_id', 'default_card')
 
 
 class ProductSerializer(serializers.ModelSerializer):

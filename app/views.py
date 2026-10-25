@@ -2,6 +2,7 @@ import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
@@ -35,10 +36,13 @@ class UserPageView(DetailView):
             return stripe_card(self.request)[0]
 
 
-class UpdateUserPersonalInfoView(UpdateView):
+class UpdateUserPersonalInfoView(LoginRequiredMixin, UpdateView):
     template_name = "update-info.html"
     model = get_user_model()
     form_class = UpdateUserPersonalInfoForm
+
+    def get_object(self, queryset=None):
+        return self.request.user
 
     def get_success_url(self):
         return f'/{self.request.user.slug}/profile/'
@@ -152,7 +156,7 @@ class AddToCartView(View):
 class DeleteElementFromCartView(View):
 
     def post(self, request):
-        item = get_object_or_404(CartItem, id=request.POST['del_item'])
+        item = get_object_or_404(CartItem, id=request.POST['del_item'], cart__in=cart_data(request))
         item_on_delete = CartItem.objects.filter(id=item.id)
         item_on_delete.delete()
         if not cart_data(request).first().items.exists():
@@ -164,7 +168,7 @@ class DeleteElementFromCartView(View):
 class DeleteAllElementsFromCartView(View):
 
     def post(self, request):
-        cart = get_object_or_404(Cart, id=request.POST['cart_id'])
+        cart = get_object_or_404(cart_data(request), id=request.POST['cart_id'])
         cart.items.all().delete()
         cart.delete()
         return JsonResponse({})
