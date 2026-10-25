@@ -75,10 +75,12 @@ class CartItemModelTestCase(TestCase):
 
     def setUp(self):
         self.product = Product.objects.create(
-            name='Test Product',
-            price=10.0
+            title='Test Product',
+            price=10.0,
+            category=ProductCategory.objects.create(category='Test Category')
         )
         self.cart_item = CartItem.objects.create(
+            cart=Cart.objects.create(),
             item=self.product,
             quantity=2
         )
@@ -98,29 +100,29 @@ class CartModelTestCase(TestCase):
         self.user = User.objects.create_user(
             username='testuser', password='secret'
         )
+        category = ProductCategory.objects.create(category='Test Category')
         self.product1 = Product.objects.create(
-            name='Test Product 1', price=10.0
+            title='Test Product 1', price=10.0, category=category
         )
         self.product2 = Product.objects.create(
-            name='Test Product 2', price=20.0
-        )
-        self.cartitem1 = CartItem.objects.create(
-            item=self.product1, quantity=2
-        )
-        self.cartitem2 = CartItem.objects.create(
-            item=self.product2, quantity=3
+            title='Test Product 2', price=20.0, category=category
         )
         self.cart = Cart.objects.create(
             user=self.user, first_name='John', last_name='Doe',
-            address='123 Main St', phone_number='555-555-5555',
+            address='123 Main St', phone_number=5555555555,
             payment_choice='Credit Card'
         )
-        self.cart.items.add(self.cartitem1, self.cartitem2)
+        self.cartitem1 = CartItem.objects.create(
+            cart=self.cart, item=self.product1, quantity=2
+        )
+        self.cartitem2 = CartItem.objects.create(
+            cart=self.cart, item=self.product2, quantity=3
+        )
 
     def test_cart_get_total(self):
         # Test that the get_total method returns the correct total
         total = self.cart.get_total()
-        self.assertEqual(total, 90.0)
+        self.assertEqual(total, 80.0)
 
     def test_cart_str(self):
         # Test the string representation of the Cart model

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -17,7 +19,7 @@ class UserProfile(AbstractUser):
     address = models.CharField(max_length=150, null=True, blank=True)
     phone_number = models.CharField(max_length=10)
     avatar = models.ImageField(upload_to=user_upload_to, null=True, blank=True)
-    bonus_coins = models.FloatField(default=0)
+    bonus_coins = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
     order_history = models.ManyToManyField("app.Cart")
     slug = models.SlugField()
     stripe_customer_id = models.CharField(max_length=250, null=True, blank=True)
@@ -52,7 +54,8 @@ class Product(SameField):
     compound = models.CharField(max_length=150)
     description = models.CharField(max_length=200)
     category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE)
-    price = models.FloatField(validators=[MinValueValidator(0), MaxValueValidator(250)])
+    price = models.DecimalField(max_digits=8, decimal_places=2,
+                                validators=[MinValueValidator(0), MaxValueValidator(250)])
     available = models.BooleanField(default=True)
     rating = models.IntegerField(default=0)
     added = models.DateTimeField(auto_now_add=True)
@@ -74,9 +77,15 @@ class Image(models.Model):
 
 
 class CartItem(models.Model):
+    cart = models.ForeignKey('app.Cart', on_delete=models.CASCADE, related_name='items')
     ordered = models.BooleanField(default=False)
     item = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['cart', 'item'], name='unique_cart_item'),
+        ]
 
     def __str__(self):
         return f'{self.item} || {self.quantity}'
@@ -87,7 +96,6 @@ class CartItem(models.Model):
 
 class Cart(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=True)
-    items = models.ManyToManyField(CartItem)
     ordered_date = models.DateTimeField(auto_now_add=True)
     ordered = models.BooleanField(default=False)
     session_key = models.CharField(max_length=255, editable=False)
@@ -102,13 +110,10 @@ class Cart(models.Model):
         return f'{self.user} || {self.ordered}'
 
     def get_total(self):
-        return list(map(lambda e, i: e + i.get_total_price(), [0], self.items.all()))[0]
+        return sum((item.get_total_price() for item in self.items.all()), Decimal('0'))
 
-    def items_counter(self):  # todo  для глбального отображение кол-ва предметов в корзине, нужно ли?
-        total = 0
-        for item in self.items.all():
-            total += item.quantity
-        return list(map(lambda k, i: k + i.quantity, [0], self.items.all()))[0]
+    def items_counter(self):
+        return sum(item.quantity for item in self.items.all())
 
 
 class Room(models.Model):

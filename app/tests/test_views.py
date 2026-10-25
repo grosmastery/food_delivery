@@ -177,7 +177,7 @@ class OrderHistoryTestCase(TestCase):
         ProductCategory.objects.create(category='test')
         Product.objects.create(title='test', price=10, category_id=1)
         cart = Cart.objects.create(session_key=self.user.session_key, ordered=True, user_id=self.user.id)
-        cart.items.add(CartItem.objects.create(item_id=1, quantity=1, ordered=True))
+        CartItem.objects.create(cart=cart, item_id=1, quantity=1, ordered=True)
         response = self.client.get(f'/{self.user.username}/profile/order-history/')
         self.assertEqual(expected_result, str(response.context_data['object_list'][0]))
 
@@ -401,6 +401,7 @@ class CheckoutTestCase(TestCase):
         expected_result = '/success/'
         expected_result_balance = 0
         self.user.bonus_coins = 100
+        self.user.save()
         self.client.login(username='test', password='test')
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
         request = self.factory.post(reverse('checkout'), {'first_name': 'testname', 'last_name': 'testlastname',

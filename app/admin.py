@@ -27,10 +27,16 @@ class ProductCategoryAdmin(admin.ModelAdmin):
         (None, {"fields": ("category", "main_image")}),)
 
 
+class CartItemInline(admin.TabularInline):
+    model = CartItem
+    extra = 0
+
+
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
     list_display = ('user', 'ordered')
     readonly_fields = ('session_key',)
+    inlines = [CartItemInline]
 
 
 @admin.register(CartItem)

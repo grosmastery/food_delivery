@@ -3,6 +3,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
+from django.db.models import F
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
@@ -10,7 +12,8 @@ from django.views.generic import DetailView, TemplateView, FormView, UpdateView,
 
 from app.forms import SignUpForm, UpdateUserPersonalInfoForm, CheckoutForm, PaymentForm
 from app.models import Product, ProductCategory, Cart, CartItem, Messages, Room
-from app.utils import get_session_key, cart_data, stripe_card, accrual_bonus_coins, save_cart_after_payment
+from app.utils import get_session_key, cart_data, stripe_card, stripe_amount, accrual_bonus_coins, \
+    pay_with_bonus_coins, save_cart_after_payment
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -135,21 +138,14 @@ class AddToCartView(View):
 
     def post(self, request):
         item = get_object_or_404(Product, id=request.POST['item_id'])
-        order_item, created = CartItem.objects.get_or_create(
-            item=item,
-            ordered=False,
-        )
-        if cart_data(request).exists():
-            cart = cart_data(request).first()
-            if cart.items.filter(item__title=item.title).exists():
-                order_item.quantity += 1
-                order_item.save()
-            else:
-                cart.items.add(order_item)
-        else:
+        cart = cart_data(request).first()
+        if cart is None:
             cart = Cart.objects.create(session_key=get_session_key(request),
                                        user=request.user if request.user.is_authenticated else None)
-            cart.items.add(order_item)
+        order_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
+        if not created:
+            order_item.quantity = F('quantity') + 1
+            order_item.save(update_fields=['quantity'])
         return JsonResponse({'status': 'Added to cart'})
 
 
@@ -205,24 +201,30 @@ class CheckoutView(TemplateView):
 
     def post(self, request):
         user = request.user
-        if request.method == 'POST':
-            form = CheckoutForm(cart_data(request), request.POST)
-            if form.is_valid():
-                form.save()
-                cart = cart_data(request).first()
-                if form.data['payment_choice'] == 'Bonus coins':
-                    user.bonus_coins -= cart.get_total()
-                    user.save()
-                elif form.data['payment_choice'] == 'Cash':
-                    accrual_bonus_coins(request)
-                elif form.data['payment_choice'] == 'Card':
-                    return redirect('create-charge')
-                save_cart_after_payment(request)
-                return redirect('success')
-            else:
-                context = self.get_context_data()
-                context['form'] = form
-                return self.render_to_response(context)
+        form = CheckoutForm(cart_data(request), request.POST)
+        if not form.is_valid():
+            return self.form_invalid(form)
+
+        payment_choice = form.cleaned_data['payment_choice']
+        with transaction.atomic():
+            cart = cart_data(request).select_for_update().first()
+            if cart is None:
+                return redirect('/cart/')
+            if payment_choice == 'Bonus coins' and not pay_with_bonus_coins(user, cart):
+                form.add_error('payment_choice', 'Not enough bonus coins')
+                return self.form_invalid(form)
+            form.save()
+            if payment_choice == 'Card':
+                return redirect('create-charge')
+            if payment_choice == 'Cash':
+                accrual_bonus_coins(user, cart)
+            save_cart_after_payment(cart)
+        return redirect('success')
+
+    def form_invalid(self, form):
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
 
 
 class ChargeView(TemplateView):
@@ -246,36 +248,39 @@ class ChargeView(TemplateView):
 
     def post(self, request):
         user = request.user
-        cart = cart_data(self.request).first()
         form = PaymentForm(self.request.POST)
         if form.is_valid():
             token = form.cleaned_data.get('stripeToken')
             use_default = form.cleaned_data.get('use_default')
             try:
-                if use_default:
-                    stripe.Charge.create(
-                        amount=int(cart.get_total()) * 100,
-                        currency="uah",
-                        customer=user.stripe_customer_id,
-                        description=f'Order #{cart.id}',
-                    )
-                else:
+                with transaction.atomic():
+                    cart = cart_data(self.request).select_for_update().first()
+                    if cart is None:
+                        return redirect('/cart/')
+                    if use_default:
+                        stripe.Charge.create(
+                            amount=stripe_amount(cart),
+                            currency="uah",
+                            customer=user.stripe_customer_id,
+                            description=f'Order #{cart.id}',
+                        )
+                    else:
 
-                    # # test payment
-                    # stripe.Charge.create(
-                    #     amount=500,
-                    #     currency="usd",
-                    #     source='tok_visa_chargeDeclined',
-                    # )
+                        # # test payment
+                        # stripe.Charge.create(
+                        #     amount=500,
+                        #     currency="usd",
+                        #     source='tok_visa_chargeDeclined',
+                        # )
 
-                    stripe.Charge.create(
-                        amount=int(cart.get_total()) * 100,
-                        currency="uah",
-                        source=token,
-                        description=f'Order #{cart.id}',
-                    )
-                accrual_bonus_coins(request)
-                save_cart_after_payment(request)
+                        stripe.Charge.create(
+                            amount=stripe_amount(cart),
+                            currency="uah",
+                            source=token,
+                            description=f'Order #{cart.id}',
+                        )
+                    accrual_bonus_coins(user, cart)
+                    save_cart_after_payment(cart)
                 return redirect('/success/')
 
             except stripe.error.CardError as e:
