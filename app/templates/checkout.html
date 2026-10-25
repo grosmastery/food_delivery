@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+
+{% block css %}
+    <style>
+        ::marker {
+            color: transparent;
+        }
+    </style>
+{% endblock %}
+
+{% block js %}
+    <script src="{% static 'js/checkout.js' %}"></script>
+{% endblock js %}
+
+{% block page %}
+    <!--Page-->
+    <div class="row"> {% csrf_token %}
+        <div class="col-md-2"></div>
+        <div class="col-md-5"><br>
+            <!--Card-->
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-1"></div>
+                        <div class="col-md-10">
+                            <!--Personal info-->
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p class="text-center" style="font-size: 25px;">Checkout</p>
+                                    <hr>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p>First Name</p>
+                                                <p>{{ form.first_name|add_class:'form-control'|default_if_none:'' }}</p>
+                                                <p>Phone Number</p>
+                                                <p>{{ form.phone_number|add_class:'form-control'|default_if_none:'' }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Last Name</p>
+                                                <p>{{ form.last_name|add_class:'form-control'|default_if_none:'' }}</p>
+                                                <p>Address</p>
+                                                <p>{{ form.address|add_class:'form-control'|default_if_none:'' }}</p>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <p>Description</p>
+                                        <p>{% render_field form.description class='form-control' placeholder='Description' %}</p>
+
+                                        <!--Payment Choices-->
+                                        {{ form.payment_choice }}
+                                        <br>
+                                        <div class="d-grid gap-2">
+                                            <!--Cash-->
+                                            <button type="submit" id="payment-cash" hidden class="btn btn-palegreen">
+                                                Confirm
+                                            </button>
+                                            <!--Card-->
+                                            <button type="submit" id="payment-card" hidden class="btn btn-palegreen">
+                                                Confirm
+                                            </button>
+                                            <!--Bonus coins-->
+                                            {% if bonus_c %}
+                                                <button type="submit" id="payment-bonus-coins" hidden
+                                                        class="btn btn-palegreen">Confirm
+                                                </button>
+                                                <span hidden id="text-id" style="font-size: 15px; color: #70a040">You have enough coins for paying </span>
+                                            {% else %}
+                                                <button type="button" id="payment-bonus-coins" disabled hidden
+                                                        class="btn btn-palegreen">Confirm
+                                                </button>
+                                                <span hidden id="text-id" style="font-size: 15px; color: red"> You have not enough coins for paying</span>
+                                            {% endif %}
+                                        </div>
+                                        <div style="color: red">
+                                            {{ form.phone_number.errors }}
+                                            {{ form.first_name.errors }}
+                                            {{ form.last_name.errors }}
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3"><br>
+            <div class="card shadow">
+                <div class="card-body ">
+                    <form class="text-center" style="font-size: 24px">Cart</form>
+                    <hr>
+                    <table class="table table-stripeds table-bordereds" style="color: #f5eec2 ">
+                        <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th class="text-center">Quantity</th>
+                            <th class="text-center">Price</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for cartitem in context_cart.items.all %}
+                            <tr>
+                                <th>{{ cartitem.item.title }}</th>
+                                <th class="text-center">{{ cartitem.quantity }}</th>
+                                <th class="text-center">₴ {{ cartitem.item.price }}</th>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <b>Total Price</b> <span class="float-end">₴ {{ context_cart.get_total }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2"></div>
+{% endblock %}

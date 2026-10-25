@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load thumbnail %}
+{% load static %}
+
+{% block page %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-8"><br>
+                <div class="card shadow">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                {% if user.avatar %}
+                                    {% thumbnail user.avatar "200x270" crop="center" as im %}
+                                        <p><img src="{{ im.url }}" style="border-radius: 5px" alt="avatar"></p>
+                                    {% endthumbnail %}
+                                {% else %}
+                                    <img style="height: 270px; width: 200px" src="{% static 'img/no_img.png' %}">
+                                {% endif %}
+                                <a href="/{{ user.slug }}/profile/update/" class="btn btn-beige">Update your
+                                    information</a>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body border">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <span style="color: #a9c25d">Username:</span>
+                                            <p>{{ user.username }}</p>
+                                            <span style="color: #a9c25d">First name:</span>
+                                            <p>{{ user.first_name }}</p>
+                                            <span style="color: #a9c25d">Last name:</span>
+                                            <p>{{ user.last_name }}</p>
+                                            <p><a href="/{{ user.slug }}/profile/order-history/" class="btn btn-beige">order
+                                                history</a></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <span style="color: #a9c25d">Phone number:</span>
+                                            <p>{{ user.phone_number }}</p>
+                                            <span style="color: #a9c25d">Your bonus coins:</span>
+                                            <p>{{ user.bonus_coins|floatformat }}</p>
+                                            <span style="color: #a9c25d">Your card:</span>
+                                            <form name="card_field">
+                                                <p>**** **** **** {{ object.last4|default:'****' }} |
+                                                    <span>Exp: {{ object.exp_month|default:'--' }}/{{ object.exp_year|default:'--' }}</span>
+                                                </p>
+                                            </form>
+
+                                            <a class="btn btn-beige" href="/update-card/">set your card</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2"></div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  web:
+    image: registry.gitlab.com/grosmastery/food_delivery
+    command: bash -c "python manage.py migrate && python manage.py collectstatic --no-input && gunicorn --bind 0.0.0.0:8009 food_delivery.wsgi"
+    ports:
+      - 8001:8009
+    env_file: .env
+    volumes:
+      - ./static:/app/static_files
+      - ./media:/app/media
+    depends_on:
+      - db
+
+  db:
+    image: postgres
+    env_file: .env
+    volumes:
+      - ./data:/var/lib/postgresql/data
+

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load bootstrap_icons %}
+
+{% block js %}
+    <script src="{% static 'js/cart.js' %}"></script>
+{% endblock %}
+
+{% block page %}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8"><br>
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <div class="row" style="font-size: 20px">
+                        {% if context_cart_exist == False %}
+                            <h1>CART IS EMPTY</h1>
+                        {% else %}
+                            <div class="col-md-1"><span style="font-size: 30px; color: #73A24E">Cart</span></div>
+                            <div class="col-md-5">Title</div>
+                            <div class="col-md-2">Quantity</div>
+                            <div class="col-md-2">Price</div>
+                            <div class="col-md-2" id="div-del-all" action="{% url 'del_all_elements_from_cart' %}">
+                                <button type="submit" id="clear-cart" class="btn btn-danger"
+                                        data-cart_id="{{ context_cart.id }}">Clear Cart {% bs_icon "trash" %}</button>
+                            </div>
+                            </div>
+                            <hr>
+                            <!--Items-->
+                            {% for item in context_cart.items.all %}
+                                <div class="row item-div">
+                                    <!--Image-->
+                                    <div class="col-md-1 my-auto">
+                                        <p>{% thumbnail item.item.main_image "100x120" crop="center" as im %}
+                                            <img src="{{ im.url }}" alt="item">
+                                        {% endthumbnail %}</p>
+                                    </div>
+                                    <!--Title-->
+                                    <div class="col-md-5 my-auto">
+                                        <a href="/category/{{ item.item.category.slug }}/{{ item.item.slug }}/"
+                                           style="text-decoration: none; color: #f5eec2"><h4>{{ item.item.title }}</h4>
+                                        </a>
+                                    </div>
+                                    <!--Quantity-->
+                                    <div class="col-md-2 my-auto"> {% csrf_token %}
+                                        <span style="font-size: 20px">{{ item.quantity }}</span>
+                                    </div>
+                                    <!--Price-->
+                                    <div class="col-md-2 my-auto">
+                                        <span style="font-size: 20px">₴ {{ item.get_total_price }}</span>
+                                    </div>
+                                    <!--Delete item-->
+                                    <div class="col-md-2 my-auto" id="del-ele-div"
+                                         action="{% url 'del_element_from_cart' %}">
+                                        <button type="button" class="btn btn-outline-danger delete-btn "
+                                                data-item="{{ item.id }}"
+                                                style="border-radius: 25px">{% bs_icon "trash" %}</button>
+                                    </div>
+                                </div>
+                                <hr>
+                            {% endfor %}
+                            <!--EndItem-->
+                            <div class="row">
+                                <div class="col-md-8" style="color: greenyellow; size: 10px"><span>min order value ₴ 1000</span>
+                                </div>
+                                <div class="col-md-2" style="font-size: 20px; margin-top: 10px">
+                                    Total price: ₴ {{ context_cart.get_total }} <br>
+                                </div>
+                                <div class="col-md-2">
+                                    {% if context_cart.get_total >= 1000 %}
+                                        <a href="/checkout/" class="btn btn-palegreen btn-lg">Checkout</a>
+                                    {% else %}
+                                        <button type="button" disabled class="btn btn-palegreen btn-lg">Checkout
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            </div>
+                        {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

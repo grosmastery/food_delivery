@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css %}
+{% endblock %}
+
+{% block js %}
+{% endblock %}
+
+{% block page %}<br>
+    <div class="row">
+        <div class="col-md-1"></div>
+        <div class="col-md-10" style="color: #39395F">
+            {% for room in object_list %}
+                <p><a href="/tech-support/{{ room.id }}/" class="btn btn-primary">{{ room }}</a></p>
+            {% endfor %}
+        </div>
+        <div class="col-md-1"></div>
+    </div>
+{% endblock %}

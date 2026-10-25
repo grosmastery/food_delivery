@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load thumbnail %}
+
+{% block page %}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8">
+            <div class="row">
+                {% for product in object_list %}
+                    <div class="col-md-3">
+                        <a href="/category/{{ product.category.slug }}/{{ product.slug }}/"
+                           style="text-decoration:none; color: #F5EEC2"><p>
+                            <div class="card">
+                                {% thumbnail product.main_image "400x400" crop="center" as im %}
+                                    <p><img src="{{ im.url }}" class="card-img-top" alt="{{ product.slug }}_img"></p>
+                                {% endthumbnail %}
+                                <div class="card-body text-center d-grid gap-2">
+                                    <h5 class="card-title">{{ product.title }}</h5>
+                                    <hr>
+                                    <p class="card-text">{{ product.compound|truncatewords:10 }}</p>
+                                    <hr>
+                                    <p>Price: ₴ {{ product.price }}</p>
+                                    <button type="button" class="btn-lg btn-palegreen">more info</button>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+{% endblock %}

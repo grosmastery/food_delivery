@@ -1,0 +1,13 @@
+.venv/
+venv/
+Lib/
+Scripts/
+pyvenv.cfg
+__pycache__/
+*.pyc
+.idea/
+db.sqlite3
+.env
+media/
+cache/
+.gitignore.bak

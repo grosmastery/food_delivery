@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load widget_tweaks %}
+
+{% block css %}
+    <style>
+        ::marker {
+            color: transparent;
+        }
+    </style>
+
+{% endblock %}
+
+{% block page %}
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-5"><br>
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-1"></div>
+                            <div class="col-md-10">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        Username:<p>{% render_field form.username class='form-control' %}</p>
+                                        First name:<p>{% render_field form.first_name class='form-control' %}</p>
+                                        Last name:<p>{% render_field form.last_name class='form-control' %}</p>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        Address: <p>{% render_field form.address class='form-control' %}</p>
+                                        Phone number: <p>{% render_field form.phone_number class='form-control' %}</p>
+                                        Photo: {% render_field form.avatar class='form-control' %}
+                                    </div>
+
+                                    <div style="color: red">
+                                        {{ form.phone_number.errors }}
+                                        {{ form.first_name.errors }}
+                                        {{ form.last_name.errors }}
+                                    </div>
+                                </div>
+                                <p>
+                                    <button type="submit" class="btn-lg btn-palegreen" style="width: 100%">Confirm
+                                    </button>
+                                </p>
+                            </div>
+                            <div class="col-md-1"></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3"></div>
+
+{% endblock %}

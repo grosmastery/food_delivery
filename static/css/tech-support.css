@@ -1,0 +1,28 @@
+.chat-window {
+    border: 2px solid #39395F;
+    border-radius: 5px;
+    min-height: 60%;
+    max-height: 60%;
+}
+
+.hr1 {
+    color: #39395F;
+    border: 2px solid;
+    opacity: 100%;
+}
+
+.sent-messages {
+    margin-left: 2%;
+    display: block;
+}
+
+.message-form textarea {
+    padding-top: 1%;
+    border-radius: 5px;
+    width: 250%;
+    height: 38px;
+}
+
+.message-form button {
+    width: 100%;
+}

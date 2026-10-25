@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load thumbnail %}
+
+{% block page %}
+    <br>
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8 text-center">
+            <h1 style="color: #a9c25d">Thank you for your purchase!</h1><br>
+            <br><hr style="color: #39395F"><br>
+            <h1 style="color: #39395F">New Products</h1><br>
+             <div class="row">
+                {% for item in new_items %}
+                    <div class="col-md-3">
+                        <a href="/category/{{ item.category.slug }}/{{ item.slug }}/" style="text-decoration:none; color: #F5EEC2"><p>
+                        <div class="card">
+                            {% thumbnail item.main_image "400x400" crop="center" as im %}
+                                <p><img src="{{ im.url }}" class="card-img-top" alt="{{ item.slug }}_img"></p>
+                            {% endthumbnail %}
+                            <div class="card-body text-center d-grid gap-2">
+                                <h5 class="card-title">{{ item.title }}</h5><hr>
+                                <p class="card-text">{{ item.compound|truncatewords:10 }}</p><hr>
+                                <p>Price: ₴ {{ item.price }}</p>
+                                <button type="button"  class="btn-lg btn-palegreen">more info</button>
+                            </div>
+                        </div>
+                        </a>
+                    </div><br>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+{% endblock %}
