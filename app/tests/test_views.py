@@ -353,7 +353,7 @@ class CheckoutTestCase(TestCase):
         request.user = AnonymousUser()
         request.session = MagicMock(return_value='test_session_key')
         response = CheckoutView.as_view()(request)
-        self.assertTrue(response.status_code == 200)
+        self.assertEqual('/cart/', response.url)
 
     def test_get_context_data(self):
         self.user.bonus_coins = 100

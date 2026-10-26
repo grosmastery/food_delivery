@@ -3,18 +3,42 @@ from decimal import Decimal, ROUND_DOWN
 from django.contrib.auth import get_user_model
 from django.db.models import F
 
-from app.models import Cart, Product
+from app.models import Cart, CartItem, Product
 import stripe
 
 
 def get_session_key(request):
     if not request.session.session_key:
         request.session.save()
-    return request.user.get_session_auth_hash() if request.user.is_authenticated else request.session.session_key
+    return request.session.session_key
 
 
 def cart_data(request):
-    return Cart.objects.filter(session_key=get_session_key(request), ordered=False)
+    carts = Cart.objects.filter(ordered=False)
+    if request.user.is_authenticated:
+        return carts.filter(user=request.user)
+    return carts.filter(session_key=get_session_key(request), user__isnull=True)
+
+
+def merge_anonymous_cart(request, user):
+    cart_id = request.session.pop('cart_id', None)
+    anonymous_cart = Cart.objects.filter(id=cart_id, user__isnull=True, ordered=False).first()
+    if anonymous_cart is None:
+        return
+
+    user_cart = Cart.objects.filter(user=user, ordered=False).first()
+    if user_cart is None:
+        anonymous_cart.user = user
+        anonymous_cart.save(update_fields=['user'])
+        return
+
+    for cart_item in anonymous_cart.items.all():
+        user_item, created = CartItem.objects.get_or_create(
+            cart=user_cart, item_id=cart_item.item_id, defaults={'quantity': cart_item.quantity})
+        if not created:
+            user_item.quantity = F('quantity') + cart_item.quantity
+            user_item.save(update_fields=['quantity'])
+    anonymous_cart.delete()
 
 
 def stripe_card(request):

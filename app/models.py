@@ -102,7 +102,7 @@ class Cart(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     address = models.CharField(max_length=150)
-    phone_number = models.IntegerField(null=True, blank=True)
+    phone_number = models.CharField(max_length=10, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
     payment_choice = models.CharField(max_length=40)
 

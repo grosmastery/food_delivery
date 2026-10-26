@@ -30,13 +30,14 @@ class SignUpView(FormView):
         return super(SignUpView, self).form_valid(form)
 
 
-class UserPageView(DetailView):
+class UserPageView(LoginRequiredMixin, DetailView):
     template_name = "user-profile-page.html"
 
     def get_object(self, queryset=None):
         if self.request.user.default_card:
             # stripe_card - function from utils.py
-            return stripe_card(self.request)[0]
+            cards = stripe_card(self.request)
+            return cards[0] if cards else None
 
 
 class UpdateUserPersonalInfoView(LoginRequiredMixin, UpdateView):
@@ -51,7 +52,7 @@ class UpdateUserPersonalInfoView(LoginRequiredMixin, UpdateView):
         return f'/{self.request.user.slug}/profile/'
 
 
-class UserCardView(TemplateView):
+class UserCardView(LoginRequiredMixin, TemplateView):
     template_name = 'user-card.html'
 
     def get_context_data(self, **kwargs):
@@ -89,12 +90,11 @@ class UserCardView(TemplateView):
         return redirect(f'/{request.user.slug}/profile/')
 
 
-class OrderHistoryView(ListView):
+class OrderHistoryView(LoginRequiredMixin, ListView):
     template_name = 'order-history.html'
 
     def get_queryset(self):
-        return Cart.objects.filter(session_key=get_session_key(self.request), ordered=True).all().prefetch_related(
-            'items')
+        return Cart.objects.filter(user=self.request.user, ordered=True).prefetch_related('items')
 
 
 """ENDBLOCK: USER"""
@@ -142,6 +142,8 @@ class AddToCartView(View):
         if cart is None:
             cart = Cart.objects.create(session_key=get_session_key(request),
                                        user=request.user if request.user.is_authenticated else None)
+            if not request.user.is_authenticated:
+                request.session['cart_id'] = cart.id
         order_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
         if not created:
             order_item.quantity = F('quantity') + 1
@@ -179,7 +181,15 @@ class CartView(TemplateView):
 """BLOCK: CHECKOUT"""
 
 
-class CheckoutView(TemplateView):
+class CartRequiredMixin:
+
+    def dispatch(self, request, *args, **kwargs):
+        if not cart_data(request).exists():
+            return redirect('/cart/')
+        return super(CartRequiredMixin, self).dispatch(request, *args, **kwargs)
+
+
+class CheckoutView(CartRequiredMixin, TemplateView):
     template_name = 'checkout.html'
 
     def get_context_data(self, **kwargs):
@@ -227,7 +237,7 @@ class CheckoutView(TemplateView):
         return self.render_to_response(context)
 
 
-class ChargeView(TemplateView):
+class ChargeView(CartRequiredMixin, TemplateView):
     template_name = 'create-charge.html'
 
     def get_context_data(self, **kwargs):
@@ -297,16 +307,16 @@ class ChargeView(TemplateView):
                 messages.error(self.request, "Invalid parameters")
                 return redirect("/")
 
-            # except stripe.error.AuthenticationError:
-            #     print('AuthenticationError')
-            #     # Authentication with Stripe's API failed
-            #     messages.error(self.request, "Not authenticated")
-            #     return redirect("/")
-            #
-            # except stripe.error.StripeError:
-            #     print('StripeError')
-            #     messages.error(self.request, "Something went wrong. You were not charged. Please try again.")
-            #     return redirect("/")
+            except stripe.error.AuthenticationError:
+                print('AuthenticationError')
+                # Authentication with Stripe's API failed
+                messages.error(self.request, "Not authenticated")
+                return redirect("/")
+
+            except stripe.error.StripeError:
+                print('StripeError')
+                messages.error(self.request, "Something went wrong. You were not charged. Please try again.")
+                return redirect("/")
 
 
 class SuccessView(TemplateView):
@@ -337,6 +347,6 @@ class TechSupportView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(TechSupportView, self).get_context_data(**kwargs)
-        context['room'] = Room.objects.get(id=self.kwargs['room_name_id'])
+        context['room'] = get_object_or_404(Room, id=self.kwargs['room_name_id'])
         context['message'] = Messages.objects.filter(room_id=self.kwargs['room_name_id'])[:100]
         return context

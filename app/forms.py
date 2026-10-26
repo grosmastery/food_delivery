@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.contrib.auth import get_user_model
 
@@ -5,21 +7,25 @@ from app.models import Cart
 from app.widgets import ImageWidget
 
 
+NAME_RE = re.compile(r"^[^\W\d_]+(?:[-'’ʼ ][^\W\d_]+)*$")
+
+
 class UserFieldsValidationMixin(forms.ModelForm):
     def clean_phone_number(self):
-        if self.cleaned_data['phone_number'] is not None and len(str(self.cleaned_data['phone_number'])) == 10:
-            return self.cleaned_data['phone_number']
+        phone_number = self.cleaned_data['phone_number']
+        if phone_number and phone_number.isdigit() and len(phone_number) == 10:
+            return phone_number
         else:
             raise forms.ValidationError("Invalid phone number")
 
     def clean_last_name(self):
-        if not self.cleaned_data['last_name'].isalpha():
+        if not NAME_RE.match(self.cleaned_data['last_name']):
             raise forms.ValidationError("Invalid last name")
         else:
             return self.cleaned_data['last_name']
 
     def clean_first_name(self):
-        if not self.cleaned_data['first_name'].isalpha():
+        if not NAME_RE.match(self.cleaned_data['first_name']):
             raise forms.ValidationError("Invalid first name")
         else:
             return self.cleaned_data['first_name']

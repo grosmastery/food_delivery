@@ -1,5 +1,5 @@
-from app.models import ProductCategory, Cart
-from app.utils import get_session_key, cart_data
+from app.models import ProductCategory
+from app.utils import cart_data
 
 
 def context_cart(request):
@@ -12,4 +12,4 @@ def context_category(request):
 
 
 def context_cart_exist(request):
-    return {"context_cart_exist": Cart.objects.filter(session_key=get_session_key(request), ordered=False).exists()}
+    return {"context_cart_exist": cart_data(request).exists()}
