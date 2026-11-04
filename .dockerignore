@@ -3,7 +3,9 @@
 venv/
 db.sqlite3
 media/
-cache/
 __pycache__/
 *.pyc
 .idea/
+static_files/
+.git/
+data/

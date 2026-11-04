@@ -1,21 +1,37 @@
-version: "3"
-
 services:
   web:
+    build: .
     image: registry.gitlab.com/grosmastery/food_delivery
-    command: bash -c "python manage.py migrate && python manage.py collectstatic --no-input && gunicorn --bind 0.0.0.0:8009 food_delivery.wsgi"
+    command: sh -c "python manage.py migrate && python manage.py collectstatic --no-input && daphne -b 0.0.0.0 -p 8009 food_delivery.asgi:application"
     ports:
       - 8001:8009
     env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
     volumes:
-      - ./static:/app/static_files
-      - ./media:/app/media
+      - static_files:/app/static_files
+      - media:/app/media
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   db:
-    image: postgres
+    image: postgres:15
     env_file: .env
     volumes:
       - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
 
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  static_files:
+  media:
