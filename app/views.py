@@ -128,6 +128,9 @@ class ProductInfoView(DetailView):
     model = Product
     template_name = "detail-product-info.html"
 
+    def get_queryset(self):
+        return Product.objects.filter(category__slug=self.kwargs['category'])
+
 
 """ENDBLOCK: Product"""
 

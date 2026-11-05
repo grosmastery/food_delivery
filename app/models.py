@@ -15,24 +15,35 @@ def product_upload_to(obj, file_name):
     return f"products/{obj.category}/{file_name}"
 
 
+def unique_slug(obj, value, fallback):
+    base = slugify(value) or fallback
+    slug = base
+    number = 2
+    others = type(obj).objects.exclude(pk=obj.pk)
+    while others.filter(slug=slug).exists():
+        slug = f'{base}-{number}'
+        number += 1
+    return slug
+
+
 class UserProfile(AbstractUser):
     address = models.CharField(max_length=150, null=True, blank=True)
     phone_number = models.CharField(max_length=10)
     avatar = models.ImageField(upload_to=user_upload_to, null=True, blank=True)
     bonus_coins = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
     order_history = models.ManyToManyField("app.Cart")
-    slug = models.SlugField()
+    slug = models.SlugField(unique=True)
     stripe_customer_id = models.CharField(max_length=250, null=True, blank=True)
     default_card = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.username)
+        self.slug = unique_slug(self, self.username, 'user')
         super(get_user_model(), self).save(*args, **kwargs)
 
 
 class SameField(models.Model):
     main_image = models.ImageField(upload_to=product_upload_to, null=True, blank=True)
-    slug = models.SlugField(null=True)
+    slug = models.SlugField(null=True, unique=True)
 
     class Meta:
         abstract = True
@@ -45,7 +56,7 @@ class ProductCategory(SameField):
         return self.category
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.category)
+        self.slug = unique_slug(self, self.category, 'category')
         super(ProductCategory, self).save(*args, **kwargs)
 
 
@@ -64,7 +75,7 @@ class Product(SameField):
         return self.title
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title)
+        self.slug = unique_slug(self, self.title, 'product')
         super(Product, self).save(*args, **kwargs)
 
 

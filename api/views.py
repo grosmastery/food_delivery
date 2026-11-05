@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.auth import get_user_model
-from rest_framework import views, viewsets
+from rest_framework import status, views, viewsets
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
@@ -28,7 +28,7 @@ class ProductCategoryApiView(views.APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProductApiView(viewsets.ModelViewSet):
@@ -73,4 +73,4 @@ class CheckoutApiView(views.APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

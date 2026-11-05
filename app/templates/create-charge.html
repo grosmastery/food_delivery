@@ -8,7 +8,6 @@
 
 {% block js %}
     <script src="https://js.stripe.com/v3/"></script>
-    <script src="https://polyfill.io/v3/polyfill.min.js?version=3.52.1&features=fetch"></script>
     <script> var stripe = Stripe('{{STRIPE_PUBLIC_KEY}}'); </script>
     <script src="{% static 'js/stripe.js' %}"></script>
 {% endblock js %}

@@ -1,6 +1,7 @@
 import time
 from unittest.mock import patch, MagicMock
 
+import stripe
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages.middleware import MessageMiddleware
@@ -494,7 +495,10 @@ class ChargeTestCase(TestCase):
         response = self.client.post(reverse('create-charge'), {'use_default': True})
         self.assertEqual(expected_result, response.url)
 
-    def test_post_card_error(self):
+    @patch('stripe.Charge.create', side_effect=stripe.error.CardError(
+        'Your card was declined.', None, 'card_declined',
+        json_body={'error': {'message': 'Your card was declined.'}}))
+    def test_post_card_error(self, mock_create_stripe):
         self.client.login(username='test', password='test')
         self.user.session_key = 'test_session_key'
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
@@ -506,7 +510,8 @@ class ChargeTestCase(TestCase):
         response = ChargeView.as_view()(request)
         self.assertTrue(response.url == '/')
 
-    def test_post_invalid_request_error(self):
+    @patch('stripe.Charge.create', side_effect=stripe.error.InvalidRequestError('Invalid source object', 'source'))
+    def test_post_invalid_request_error(self, mock_create_stripe):
         self.client.login(username='test', password='test')
         self.user.session_key = 'test_session_key'
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
