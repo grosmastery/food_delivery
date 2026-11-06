@@ -2,75 +2,71 @@
 {% load static %}
 
 {% block css %}
-    <link rel="stylesheet" href="{% static 'css/tech-support.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tech-support.css' %}?v=3">
 {% endblock css %}
 
 {% block js %}
-    <script src="{% static 'js/tech-support.js' %}"></script>
+    <script src="{% static 'js/tech-support.js' %}?v=3"></script>
 {% endblock js %}
 
-{% block page %}<br>
+{% block page %}
     <input type="hidden" id="room_id" value="{{ room.id }}">
-    <div class="row" style="color: #39395F">
-        <div class="col-md-1"></div>
-        <div class="col-md-6">
+    <div class="container">
+        <h1 class="section-title">{{ room }}</h1>
+        <div class="row g-4">
+            <div class="col-lg-7 d-grid gap-3 align-content-start">
             <!--LoremIpsum-->
-            <div class="module">
+            <div class="card module">
                 <h4>Lorem ipsum dolor sit amet.</h4>
                 <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusantium amet dolor dolores eaque ex
                     fugiat libero magni numquam praesentium quasi, quidem voluptate! Beatae, nisi, officia!</p>
             </div>
-            <div class="module">
+            <div class="card module">
                 <h4>Amet eveniet fuga in! Ipsam?</h4>
                 <p>Asperiores autem commodi cum deserunt distinctio eaque eligendi, magni natus nesciunt nostrum numquam
                     officiis omnis quae quis quo ratione repellendus repudiandae sit vel veritatis voluptates.</p>
             </div>
-            <div class="module">
+            <div class="card module">
                 <h4>Beatae cupiditate harum nemo recusandae!</h4>
                 <p>Animi aspernatur cumque dolores error impedit libero maxime molestias, natus officia perspiciatis rem
                     repellendus saepe sunt tenetur velit. Ab aliquid facere ipsam iste, quo sequi!</p>
             </div>
-            <div class="module">
+            <div class="card module">
                 <h4>Accusantium cum harum possimus quaerat.</h4>
                 <p>Asperiores est maiores optio praesentium quidem sed temporibus? Aliquam aperiam autem cupiditate
                     distinctio dolor ducimus et repellendus rerum. Ducimus exercitationem optio, quas recusandae
                     suscipit voluptas.</p>
             </div>
-            <div class="module">
+            <div class="card module">
                 <h4>Blanditiis ipsam magnam quae quisquam!</h4>
                 <p>Adipisci amet at deserunt dicta ducimus est explicabo impedit in iusto labore libero natus
                     necessitatibus officiis omnis, qui quis quo quod recusandae sunt voluptate. Totam.</p>
             </div>
-            <div class="module">
+            <div class="card module">
                 <h4>Autem debitis dicta itaque vero?</h4>
                 <p>Architecto aut eius explicabo harum ipsam, ipsum iure nemo non odit quae quam quod rerum saepe,
                     tempore unde ut velit voluptates! Eum inventore quam recusandae?</p>
             </div><!--LoremIpsum-->
-        </div>
-        <div class="col-md-4">
-            <div class="chat-window shadow"><br>
-                <div>
-                    <h2 class="text-center">Assistant chat</h2>
-                </div>
-                <hr class="hr1">
-                {% for messages in message %}
-                    <div class="sent-messages">
-                        <b>{{ messages.from_user.username }}:</b> <span>{{ messages.message }}</span>
+            </div>
+            <div class="col-lg-5">
+                <div class="card shadow chat-card">
+                    <div class="chat-header">Assistant chat</div>
+                    <div class="chat-window">
+                        {% for messages in message %}
+                            <div class="sent-messages">
+                                <b>{{ messages.from_user.username }}:</b> <span>{{ messages.message }}</span>
+                            </div>
+                        {% endfor %}
+                        <div id="chat-view">
+                        </div>
                     </div>
-                {% endfor %}
-                <div id="chat-view">
-                </div>
-            </div>
-            <div class="row message-form">
-                <div class="col-md-8">
-                    <label><textarea id="message"></textarea></label>
-                </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-primary" id="send-message">button</button>
+                    <div class="message-form">
+                        <textarea id="message" class="form-control" rows="1" placeholder="Type a message…"></textarea>
+                        <button type="submit" class="btn btn-palegreen" id="send-message">Send</button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-1"></div>
     </div>
 
 {% endblock %}

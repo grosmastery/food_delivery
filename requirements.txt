@@ -3,6 +3,7 @@ django-environ==0.14.0
 djangorestframework==3.18.3
 channels[daphne]==4.3.2
 channels-redis==4.3.0
+redis==6.4.0
 stripe==16.1.0
 Pillow==13.0.0
 sorl-thumbnail==13.4.0

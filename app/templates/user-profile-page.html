@@ -1,61 +1,61 @@
 {% extends "base.html" %}
 {% load thumbnail %}
 {% load static %}
+{% load bootstrap_icons %}
 
 {% block page %}
     <div class="container">
-        <div class="row">
-            <div class="col-md-2"></div>
-            <div class="col-md-8"><br>
-                <div class="card shadow">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                {% if user.avatar %}
-                                    {% thumbnail user.avatar "200x270" crop="center" as im %}
-                                        <p><img src="{{ im.url }}" style="border-radius: 5px" alt="avatar"></p>
-                                    {% endthumbnail %}
-                                {% else %}
-                                    <img style="height: 270px; width: 200px" src="{% static 'img/no_img.png' %}">
-                                {% endif %}
-                                <a href="/{{ user.slug }}/profile/update/" class="btn btn-beige">Update your
-                                    information</a>
-                            </div>
-                            <div class="col-md-8">
-                                <div class="card-body border">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <span style="color: #a9c25d">Username:</span>
-                                            <p>{{ user.username }}</p>
-                                            <span style="color: #a9c25d">First name:</span>
-                                            <p>{{ user.first_name }}</p>
-                                            <span style="color: #a9c25d">Last name:</span>
-                                            <p>{{ user.last_name }}</p>
-                                            <p><a href="/{{ user.slug }}/profile/order-history/" class="btn btn-beige">order
-                                                history</a></p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <span style="color: #a9c25d">Phone number:</span>
-                                            <p>{{ user.phone_number }}</p>
-                                            <span style="color: #a9c25d">Your bonus coins:</span>
-                                            <p>{{ user.bonus_coins|floatformat }}</p>
-                                            <span style="color: #a9c25d">Your card:</span>
-                                            <form name="card_field">
-                                                <p>**** **** **** {{ object.last4|default:'****' }} |
-                                                    <span>Exp: {{ object.exp_month|default:'--' }}/{{ object.exp_year|default:'--' }}</span>
-                                                </p>
-                                            </form>
-
-                                            <a class="btn btn-beige" href="/update-card/">set your card</a>
-                                        </div>
-                                    </div>
+        <div class="card shadow mx-auto" style="max-width: 960px">
+            <div class="card-body p-4 p-lg-5">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-4 text-center">
+                        {% if user.avatar %}
+                            {% thumbnail user.avatar "400x400" crop="center" as im %}
+                                <img src="{{ im.url }}" class="profile-avatar" alt="avatar">
+                            {% endthumbnail %}
+                        {% else %}
+                            <img src="{% static 'img/no_img.png' %}" class="profile-avatar" alt="avatar">
+                        {% endif %}
+                        <h3 class="mt-3 mb-0">{{ user.first_name }} {{ user.last_name }}</h3>
+                        <div class="text-muted">@{{ user.username }}</div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6">
+                                <div class="stat">
+                                    <span>Your bonus coins</span>
+                                    <b>{% bs_icon 'coin' %} {{ user.bonus_coins|floatformat }}</b>
                                 </div>
                             </div>
+                            <div class="col-sm-6">
+                                <div class="stat">
+                                    <span>Your card</span>
+                                    <form name="card_field">
+                                        <b>**** {{ object.last4|default:'****' }}</b>
+                                        <small class="text-muted">Exp: {{ object.exp_month|default:'--' }}/{{ object.exp_year|default:'--' }}</small>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="info-item"><span>Username</span><p>{{ user.username }}</p></div>
+                                <div class="info-item"><span>First name</span><p>{{ user.first_name|default:'—' }}</p></div>
+                                <div class="info-item"><span>Last name</span><p>{{ user.last_name|default:'—' }}</p></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="info-item"><span>Phone number</span><p>{{ user.phone_number|default:'—' }}</p></div>
+                                <div class="info-item"><span>Address</span><p>{{ user.address|default:'—' }}</p></div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <a href="/{{ user.slug }}/profile/order-history/" class="btn btn-palegreen">{% bs_icon 'clock-history' %} order history</a>
+                            <a href="/{{ user.slug }}/profile/update/" class="btn btn-beige">Update your information</a>
+                            <a class="btn btn-beige" href="/update-card/">set your card</a>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-2"></div>
         </div>
     </div>
 {% endblock %}

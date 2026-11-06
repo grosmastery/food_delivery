@@ -1,35 +1,23 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load thumbnail %}
+{% load bootstrap_icons %}
 
 {% block page %}
-    <br>
-    <div class="row">
-        <div class="col-md-2"></div>
-        <div class="col-md-8 text-center">
-            <h1 style="color: #a9c25d">Thank you for your purchase!</h1><br>
-            <br><hr style="color: #39395F"><br>
-            <h1 style="color: #39395F">New Products</h1><br>
-             <div class="row">
-                {% for item in new_items %}
-                    <div class="col-md-3">
-                        <a href="/category/{{ item.category.slug }}/{{ item.slug }}/" style="text-decoration:none; color: #F5EEC2"><p>
-                        <div class="card">
-                            {% thumbnail item.main_image "400x400" crop="center" as im %}
-                                <p><img src="{{ im.url }}" class="card-img-top" alt="{{ item.slug }}_img"></p>
-                            {% endthumbnail %}
-                            <div class="card-body text-center d-grid gap-2">
-                                <h5 class="card-title">{{ item.title }}</h5><hr>
-                                <p class="card-text">{{ item.compound|truncatewords:10 }}</p><hr>
-                                <p>Price: ₴ {{ item.price }}</p>
-                                <button type="button"  class="btn-lg btn-palegreen">more info</button>
-                            </div>
-                        </div>
-                        </a>
-                    </div><br>
+    <div class="container">
+        <div class="card shadow empty-state mx-auto mb-5" style="max-width: 640px">
+            {% bs_icon 'check-circle-fill' size='3.5em' %}
+            <h1 style="color: var(--fd-lime)">Thank you for your purchase!</h1>
+            <p class="mb-0">We are already cooking your order.</p>
+        </div>
+        <section class="section">
+            <h2 class="section-title">New Products</h2>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
+                {% for product in new_items|slice:":4" %}
+                    <div class="col">
+                        {% include 'includes/product-card.html' %}
+                    </div>
                 {% endfor %}
             </div>
-        </div>
-        <div class="col-md-2"></div>
+        </section>
     </div>
 {% endblock %}

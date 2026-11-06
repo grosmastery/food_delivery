@@ -1,20 +1,18 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load bootstrap_icons %}
 
-{% block css %}
-{% endblock %}
-
-{% block js %}
-{% endblock %}
-
-{% block page %}<br>
-    <div class="row">
-        <div class="col-md-1"></div>
-        <div class="col-md-10" style="color: #39395F">
+{% block page %}
+    <div class="container" style="max-width: 720px">
+        <h1 class="section-title">Tech Support</h1>
+        <div class="d-grid gap-3">
             {% for room in object_list %}
-                <p><a href="/tech-support/{{ room.id }}/" class="btn btn-primary">{{ room }}</a></p>
+                <a href="/tech-support/{{ room.id }}/" class="card room-link">
+                    <span>{% bs_icon 'chat-dots' %} {{ room }}</span>
+                    {% bs_icon 'chevron-right' %}
+                </a>
+            {% empty %}
+                <div class="card empty-state">No support rooms yet.</div>
             {% endfor %}
         </div>
-        <div class="col-md-1"></div>
     </div>
 {% endblock %}

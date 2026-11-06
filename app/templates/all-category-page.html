@@ -1,79 +1,32 @@
 {% extends "base.html" %}
-{% load bootstrap_icons %}
-{% load thumbnail %}
 
-
-{% block css %}
-    <style>
-        .btn-lg {
-            width: 80%;
-        }
-    </style>
-{% endblock %}
 
 {% block page %}
     <div class="container">
-        <div class="row">
-            <div class="col-md-12"><br>
-            <!--Block Popular Items-->
-                <div class="card shadow">
-                    <div class="row">
-                        <div class="col-md-1"></div>
-                        <div class="col-md-10"> <br>
-                        <h1 class="text-center">Most popular</h1>
-                        <br><hr><br>
-                            <div class="row">
-                                {% for item in items_rating %}
-                                    <div class="col-md-3" >
-                                        <div>
-                                            <div class="text-center" >
-                                                <a href="/category/{{ item.category.slug }}/{{ item.slug }}/" style="text-decoration: none; color: #F5EEC2" >
-                                                    {% thumbnail item.main_image "200x200" crop="center" as im %}
-                                                        <p><img src="{{ im.url }}" style="border-radius: 5px" alt="category_img"></p>
-                                                    {% endthumbnail %}
-                                                    <p>₴ {{ item.price }}</p>
-                                                    <p><button  class="btn-lg btn-palegreen">{{ item.title }}</button></p>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div> <br>
-                        </div>
-                        <div class="col-md-1"></div>
+        <!--Block Popular Items-->
+        <section class="section">
+            <h1 class="section-title">Most popular</h1>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
+                {% for product in items_rating %}
+                    <div class="col">
+                        {% include 'includes/product-card.html' %}
                     </div>
-                </div>
-            <!--END Block Popular Items-->
-            <br>
-            <!--Block Categories-->
-                <div class=" card shadow">
-                    <div class="row">
-                        <div class="col-md-1"></div>
-                        <div class="col-md-10"><br>
-                            <h1 class="text-center">Categories</h1>
-                            <br><hr><br>
-                            <div class="row">
-                                {% for category in context_category %}
-                                    <div class="col-md-3">
-                                        <div>
-                                            <div class="text-center">
-                                                <a href="/category/{{ category.slug }}">
-                                                {% thumbnail category.main_image "200x200" crop="center" as im %}
-                                                    <p><img src="{{ im.url }}" style="border-radius: 5px" alt="category_img"></p>
-                                                {% endthumbnail %}
-                                                <p><button  class="btn-lg btn-palegreen">{{ category.category }}</button></p>
-                                                </a>
-                                            </div><br>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="col-md-1"></div>
-                    </div>
-                </div>
-            <!--END Block Categories-->
+                {% endfor %}
             </div>
-        </div>
+        </section>
+        <!--END Block Popular Items-->
+
+        <!--Block Categories-->
+        <section class="section">
+            <h1 class="section-title">Categories</h1>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+                {% for category in context_category %}
+                    <div class="col">
+                        {% include 'includes/category-card.html' %}
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <!--END Block Categories-->
     </div>
 {% endblock %}

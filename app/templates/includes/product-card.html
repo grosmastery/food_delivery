@@ -1,0 +1,17 @@
+{% load static %}
+{% load thumbnail %}
+<a href="/category/{{ product.category.slug }}/{{ product.slug }}/" class="card product-card">
+    {% thumbnail product.main_image "500x500" crop="center" as im %}
+        <img src="{{ im.url }}" class="product-card__img" alt="{{ product.title }}" loading="lazy">
+    {% empty %}
+        <img src="{% static 'img/no_img.png' %}" class="product-card__img" alt="{{ product.title }}">
+    {% endthumbnail %}
+    <div class="product-card__body">
+        <h5 class="product-card__title">{{ product.title }}</h5>
+        <p class="product-card__text">{{ product.compound }}</p>
+        <div class="product-card__footer">
+            <span class="price">₴ {{ product.price }}</span>
+            <span class="btn btn-palegreen btn-sm px-3">more info</span>
+        </div>
+    </div>
+</a>

@@ -4,6 +4,8 @@ $(document).ready(function () {
         let item_id = $(this).data('item_id')
         let token = $('input[name=csrfmiddlewaretoken]').val()
         let url = $('#button-form').attr("action");
+        let button = $(this);
+        button.prop('disabled', true);
         $.ajax({
             type: 'POST',
             url: url,
@@ -13,9 +15,19 @@ $(document).ready(function () {
             },
             success: function (response) {
                 alertify.success(response.status)
+                let badge = $('.cart-badge');
+                if (badge.length) {
+                    badge.text(parseInt(badge.text(), 10) + 1);
+                } else {
+                    $('.cart-link').append('<span class="cart-badge">1</span>');
+                }
             },
-            errors: function () {
+            error: function () {
                 console.log("error")
+                alertify.error('Could not add to cart, please try again')
+            },
+            complete: function () {
+                button.prop('disabled', false);
             }
         })
     });

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "food-delivery",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["manage.py", "runserver", "127.0.0.1:8010"],
+      "env": {"REDIS_URL": "redis://127.0.0.1:6380"},
+      "port": 8010
+    }
+  ]
+}

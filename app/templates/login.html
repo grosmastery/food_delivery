@@ -1,29 +1,29 @@
 {% extends "base.html" %}
 {% load static %}
-{% load thumbnail %}
 {% load widget_tweaks %}
 
 {% block page %}
-    <div class="row">
-        <div class="col-md-5"></div>
-        <div class="col-md-2"><br>
-            <form method="post"> {% csrf_token %}
-                <div class="card text-center" style="width: 20rem;">
-                <img src="{% static 'img/logo.jpg' %}" class="card-img-top" alt="logo">
-                <div class="card-body d-grid gap-2" ><hr>
-                    <h5 class="card-title">Please sign in</h5><br>
-                    <p class="card-text">{{ form.username.label }}</p>
-                    <p class="card-text">{{ form.username|add_class:'form-control' }}</p>
-                    <p class="card-text">{{ form.password.label }}</p>
-                    <p class="card-text">{{ form.password|add_class:'form-control' }}</p>
-                    <button type="submit" class="btn btn-palegreen" id="signin_id">Sign in</button>
-                    <p class="mt-5 mb-3 text-muted">&copy; 2022</p>
+    <div class="container">
+        <form method="post"> {% csrf_token %}
+            <div class="card shadow auth-card">
+                <img src="{% static 'img/logo.jpg' %}" class="auth-card__logo" alt="logo">
+                <div class="card-body p-4 d-grid gap-3">
+                    <h4 class="card-title text-center mb-0">Please sign in</h4>
+                    {% if form.non_field_errors %}
+                        <div class="form-errors text-center">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                    <div>
+                        <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                        {{ form.username|add_class:'form-control' }}
+                    </div>
+                    <div>
+                        <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                        {{ form.password|add_class:'form-control' }}
+                    </div>
+                    <button type="submit" class="btn btn-palegreen btn-lg" id="signin_id">Sign in</button>
+                    <p class="text-center mb-0 text-muted">No account yet? <a href="/signup/" style="color: var(--fd-lime)">Sign up</a></p>
                 </div>
-                </div>
-            </form>
-        </div>
-        <div class="col-md-5"></div>
+            </div>
+        </form>
     </div>
 {% endblock %}
-
-

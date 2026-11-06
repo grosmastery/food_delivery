@@ -1,15 +1,59 @@
 {% extends 'base.html' %}
+{% load thumbnail %}
+{% load bootstrap_icons %}
 
 
 {% block page %}
-    <div class="row">
-    <div class="col-md-4"></div>
-    <div class="col-md-5 text-center">
-        <div style="font-size: 350%; margin-top: 20%; color: #70a040">Welcome to Gros Delivery</div>
-        <div style="margin-top: 15%" class="d-grid gap-2 shadow-lg" >
-            <a href="/category/" class="btn btn-palegreen btn-lg">Let's start </a>
+    <div class="container">
+        <div class="hero">
+            <div class="row g-0 align-items-center">
+                <div class="col-lg-6">
+                    <div class="hero__content">
+                        <div class="hero__title">Welcome to QuickFood</div>
+                        <p class="hero__text">Pizza, pasta, sushi, soups and desserts from the best kitchens in town.
+                            Order in a couple of clicks and get bonus coins for every purchase.</p>
+                        <div class="d-flex flex-wrap gap-3">
+                            <a href="/category/" class="btn btn-palegreen btn-lg px-4">Let's start</a>
+                            {% if not user.is_authenticated %}
+                                <a href="/signup/" class="btn btn-beige btn-lg px-4">Create account</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 d-none d-lg-block">
+                    <div class="hero__mosaic">
+                        {% for category in context_category|slice:":4" %}
+                            {% thumbnail category.main_image "400x400" crop="center" as im %}
+                                <img src="{{ im.url }}" alt="{{ category.category }}">
+                            {% endthumbnail %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col-md-3"></div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4 mt-2">
+            <div class="col">
+                <div class="card feature">
+                    {% bs_icon 'lightning-charge-fill' size='2.2em' %}
+                    <h5>Fast delivery</h5>
+                    <p>Hot food at your door in 45 minutes or less.</p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card feature">
+                    {% bs_icon 'coin' size='2.2em' %}
+                    <h5>Bonus coins</h5>
+                    <p>Get 1% back from every order and pay with coins later.</p>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card feature">
+                    {% bs_icon 'credit-card-2-front-fill' size='2.2em' %}
+                    <h5>Secure payments</h5>
+                    <p>Pay by card with 3-D Secure, in cash or with bonus coins.</p>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

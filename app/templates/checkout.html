@@ -3,119 +3,83 @@
 {% load widget_tweaks %}
 
 
-{% block css %}
-    <style>
-        ::marker {
-            color: transparent;
-        }
-    </style>
-{% endblock %}
-
 {% block js %}
-    <script src="{% static 'js/checkout.js' %}"></script>
+    <script src="{% static 'js/checkout.js' %}?v=3"></script>
 {% endblock js %}
 
 {% block page %}
     <!--Page-->
-    <div class="row"> {% csrf_token %}
-        <div class="col-md-2"></div>
-        <div class="col-md-5"><br>
-            <!--Card-->
-            <div class="card shadow">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-1"></div>
-                        <div class="col-md-10">
-                            <!--Personal info-->
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <p class="text-center" style="font-size: 25px;">Checkout</p>
-                                    <hr>
-                                    <form method="post">
-                                        {% csrf_token %}
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <p>First Name</p>
-                                                <p>{{ form.first_name|add_class:'form-control'|default_if_none:'' }}</p>
-                                                <p>Phone Number</p>
-                                                <p>{{ form.phone_number|add_class:'form-control'|default_if_none:'' }}</p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <p>Last Name</p>
-                                                <p>{{ form.last_name|add_class:'form-control'|default_if_none:'' }}</p>
-                                                <p>Address</p>
-                                                <p>{{ form.address|add_class:'form-control'|default_if_none:'' }}</p>
-                                            </div>
-                                        </div>
-                                        <hr>
-                                        <p>Description</p>
-                                        <p>{% render_field form.description class='form-control' placeholder='Description' %}</p>
-
-                                        <!--Payment Choices-->
-                                        {{ form.payment_choice }}
-                                        <br>
-                                        <div class="d-grid gap-2">
-                                            <!--Cash-->
-                                            <button type="submit" id="payment-cash" hidden class="btn btn-palegreen">
-                                                Confirm
-                                            </button>
-                                            <!--Card-->
-                                            <button type="submit" id="payment-card" hidden class="btn btn-palegreen">
-                                                Confirm
-                                            </button>
-                                            <!--Bonus coins-->
-                                            {% if bonus_c %}
-                                                <button type="submit" id="payment-bonus-coins" hidden
-                                                        class="btn btn-palegreen">Confirm
-                                                </button>
-                                                <span hidden id="text-id" style="font-size: 15px; color: #70a040">You have enough coins for paying </span>
-                                            {% else %}
-                                                <button type="button" id="payment-bonus-coins" disabled hidden
-                                                        class="btn btn-palegreen">Confirm
-                                                </button>
-                                                <span hidden id="text-id" style="font-size: 15px; color: red"> You have not enough coins for paying</span>
-                                            {% endif %}
-                                        </div>
-                                        <div style="color: red">
-                                            {{ form.phone_number.errors }}
-                                            {{ form.first_name.errors }}
-                                            {{ form.last_name.errors }}
-                                        </div>
-                                    </form>
+    <div class="container"> {% csrf_token %}
+        <h1 class="section-title">Checkout</h1>
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <!--Card-->
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <!--Personal info-->
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.first_name.id_for_label }}">First Name</label>
+                                    {{ form.first_name|add_class:'form-control'|default_if_none:'' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.last_name.id_for_label }}">Last Name</label>
+                                    {{ form.last_name|add_class:'form-control'|default_if_none:'' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.phone_number.id_for_label }}">Phone Number</label>
+                                    {{ form.phone_number|add_class:'form-control'|default_if_none:'' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="{{ form.address.id_for_label }}">Address</label>
+                                    {{ form.address|add_class:'form-control'|default_if_none:'' }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="{{ form.description.id_for_label }}">Description</label>
+                                    {% render_field form.description class='form-control' placeholder='Comment for the courier' rows='3' %}
                                 </div>
                             </div>
-                        </div>
+                            <hr class="my-4">
+
+                            <!--Payment Choices-->
+                            <span class="form-label">Payment</span>
+                            <div class="payment-choices">{{ form.payment_choice }}</div>
+                            <div class="d-grid gap-2 mt-4">
+                                <!--Cash-->
+                                <button type="submit" id="payment-cash" hidden class="btn btn-palegreen btn-lg">
+                                    Confirm
+                                </button>
+                                <!--Card-->
+                                <button type="submit" id="payment-card" hidden class="btn btn-palegreen btn-lg">
+                                    Confirm
+                                </button>
+                                <!--Bonus coins-->
+                                {% if bonus_c %}
+                                    <button type="submit" id="payment-bonus-coins" hidden
+                                            class="btn btn-palegreen btn-lg">Confirm
+                                    </button>
+                                    <span hidden id="text-id" style="font-size: 15px; color: var(--fd-lime)">You have enough coins for paying</span>
+                                {% else %}
+                                    <button type="button" id="payment-bonus-coins" disabled hidden
+                                            class="btn btn-palegreen btn-lg">Confirm
+                                    </button>
+                                    <span hidden id="text-id" class="form-errors">You have not enough coins for paying</span>
+                                {% endif %}
+                            </div>
+                            <div class="form-errors mt-3">
+                                {{ form.phone_number.errors }}
+                                {{ form.first_name.errors }}
+                                {{ form.last_name.errors }}
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3"><br>
-            <div class="card shadow">
-                <div class="card-body ">
-                    <form class="text-center" style="font-size: 24px">Cart</form>
-                    <hr>
-                    <table class="table table-stripeds table-bordereds" style="color: #f5eec2 ">
-                        <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th class="text-center">Quantity</th>
-                            <th class="text-center">Price</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for cartitem in context_cart.items.all %}
-                            <tr>
-                                <th>{{ cartitem.item.title }}</th>
-                                <th class="text-center">{{ cartitem.quantity }}</th>
-                                <th class="text-center">₴ {{ cartitem.item.price }}</th>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                    <b>Total Price</b> <span class="float-end">₴ {{ context_cart.get_total }}</span>
-                </div>
+            <div class="col-lg-5">
+                {% include 'includes/order-summary.html' %}
             </div>
         </div>
     </div>
-    <div class="col-md-2"></div>
 {% endblock %}

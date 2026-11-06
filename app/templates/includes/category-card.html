@@ -1,0 +1,13 @@
+{% load static %}
+{% load thumbnail %}
+<a href="/category/{{ category.slug }}/" class="card category-card">
+    {% thumbnail category.main_image "600x450" crop="center" as im %}
+        <img src="{{ im.url }}" alt="{{ category.category }}" loading="lazy">
+    {% empty %}
+        <img src="{% static 'img/no_img.png' %}" alt="{{ category.category }}">
+    {% endthumbnail %}
+    <div class="category-card__label">
+        {{ category.category }}
+        <small>{{ category.product_set.count }} dishes</small>
+    </div>
+</a>

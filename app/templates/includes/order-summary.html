@@ -1,0 +1,26 @@
+<div class="card shadow">
+    <div class="card-body p-4">
+        <h4 class="mb-3">Cart</h4>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th class="text-center">Qty</th>
+                <th class="text-end">Price</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for cartitem in context_cart.items.all %}
+                <tr>
+                    <td>{{ cartitem.item.title }}</td>
+                    <td class="text-center">{{ cartitem.quantity }}</td>
+                    <td class="text-end">₴ {{ cartitem.get_total_price }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="summary-row summary-total">
+            <span>Total Price</span><span class="price">₴ {{ context_cart.get_total }}</span>
+        </div>
+    </div>
+</div>

@@ -116,7 +116,11 @@ class OrderHistoryView(LoginRequiredMixin, ListView):
     template_name = 'order-history.html'
 
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user, ordered=True).prefetch_related('items')
+        return (
+            Cart.objects.filter(user=self.request.user, ordered=True)
+            .order_by('-ordered_date')
+            .prefetch_related('items__item')
+        )
 
 
 class MainView(TemplateView):

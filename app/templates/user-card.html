@@ -1,51 +1,48 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load widget_tweaks %}
+{% load bootstrap_icons %}
 
 {% block css %}
-    <link rel="stylesheet" href="{% static 'css/checkout.css' %}"/>
+    <link rel="stylesheet" href="{% static 'css/checkout.css' %}?v=3"/>
 {% endblock css %}
 
 {% block js %}
     <script src="https://js.stripe.com/v3/"></script>
     <script> var stripe = Stripe('{{STRIPE_PUBLIC_KEY}}'); </script>
-    <script src="{% static 'js/stripe.js' %}"></script>
+    <script src="{% static 'js/stripe.js' %}?v=3"></script>
 {% endblock js %}
 
 {% block page %}
-    <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-5"><br>
-            <div class="card shadow">
-                <div class="card-body">
-                    {% if card %}
-                        <div style="padding: 5px 30px;">
-                            <label class="custom-control-label">Current card number: **** ****
-                                **** {{ card.last4 }}
-                                <span>Exp: {{ card.exp_month }}/{{ card.exp_year }}</span>
+    <div class="container">
+        <h1 class="section-title">Your card</h1>
+        <div class="card shadow mx-auto" style="max-width: 620px">
+            <div class="card-body p-4">
+                {% if card %}
+                    <div class="stripe-form mb-2">
+                        <span class="form-label">Current card</span>
+                        <div class="fs-5">{% bs_icon 'credit-card-2-front' %} **** **** **** {{ card.last4 }}
+                            <span class="text-muted fs-6">Exp: {{ card.exp_month }}/{{ card.exp_year }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+                <form method="post" class="stripe-form" id="stripe-form" data-mode="setup"
+                      data-client-secret="{{ client_secret }}">
+                    {% csrf_token %}
+                    <div class="new-card-form">
+                        <div class="stripe-form-row" id="creditCard">
+                            <label for="card-element" id="stripeBtnLabel" class="form-label">
+                                {% if card %}Change card info{% else %}Card info{% endif %}
                             </label>
+                            <div id="card-element"></div>
                         </div>
-                    {% endif %}
-                    <form method="post" class="stripe-form" id="stripe-form" data-mode="setup"
-                          data-client-secret="{{ client_secret }}">
-                        {% csrf_token %}
-                        <br>
-                        <div class="new-card-form">
-                            <div class="stripe-form-row" id="creditCard">
-                                <label for="card-element" id="stripeBtnLabel">
-                                    Change card info
-                                </label>
-                                <div id="card-element"></div>
-                            </div>
-                            <div class="stripe-form-row d-grid gap-2">
-                                <button type="submit" id="stripeBtn" class="btn btn-palegreen">Add card</button>
-                            </div>
-                            <div id="card-errors" role="alert"></div>
+                        <div class="stripe-form-row d-grid gap-2">
+                            <button type="submit" id="stripeBtn" class="btn btn-palegreen">Add card</button>
                         </div>
-                    </form>
-                </div>
+                        <div id="card-errors" role="alert"></div>
+                    </div>
+                </form>
             </div>
         </div>
-        <div class="col-md-4"></div>
     </div>
 {% endblock %}
