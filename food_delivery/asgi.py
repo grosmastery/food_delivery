@@ -10,12 +10,13 @@ django_asgi_app = get_asgi_application()
 
 from tech_support.routing import ws_routes
 
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-            URLRouter(ws_routes),
-
-        )
-    )
-})
+application = ProtocolTypeRouter(
+    {
+        "http": django_asgi_app,
+        "websocket": AllowedHostsOriginValidator(
+            AuthMiddlewareStack(
+                URLRouter(ws_routes),
+            )
+        ),
+    }
+)

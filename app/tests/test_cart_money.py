@@ -2,17 +2,20 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from app.models import Cart, CartItem, Product, ProductCategory
 
-CHECKOUT_DATA = {'first_name': 'testname', 'last_name': 'testlastname', 'address': 'test address',
-                 'phone_number': 1234567890}
+CHECKOUT_DATA = {
+    'first_name': 'testname',
+    'last_name': 'testlastname',
+    'address': 'test address',
+    'phone_number': 1234567890,
+}
 
 
 class CartTotalTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         self.pizza = Product.objects.create(title='pizza', price=Decimal('10.50'), category=category)
@@ -32,7 +35,6 @@ class CartTotalTestCase(TestCase):
 
 
 class SeparateCartItemsTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         self.pizza = Product.objects.create(title='pizza', price=10, category=category)
@@ -53,7 +55,6 @@ class SeparateCartItemsTestCase(TestCase):
 
 
 class BonusCoinsPaymentTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         self.pizza = Product.objects.create(title='pizza', price=100, category=category)
@@ -95,7 +96,6 @@ class BonusCoinsPaymentTestCase(TestCase):
 
 
 class CheckoutTwiceTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         self.pizza = Product.objects.create(title='pizza', price=100, category=category)
@@ -116,7 +116,6 @@ class CheckoutTwiceTestCase(TestCase):
 
 
 class StripeAmountTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         self.pizza = Product.objects.create(title='pizza', price=Decimal('10.55'), category=category)

@@ -1,20 +1,19 @@
 import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import stripe
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.test import TestCase, Client, RequestFactory
+from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
-from app.models import Cart, Product, ProductCategory, CartItem, Room, Messages
-from app.views import UserCardView, UserPageView, CategoryView, CheckoutView, ChargeView, SuccessView
+from app.models import Cart, CartItem, Messages, Product, ProductCategory, Room
+from app.views import CategoryView, ChargeView, CheckoutView, SuccessView, UserCardView, UserPageView
 
 
 class SignUpViewTestCase(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.username = 'test'
@@ -32,30 +31,35 @@ class SignUpViewTestCase(TestCase):
         self.assertTrue(response.status_code == 200)
 
     def test_signup_form_success(self):
-        response = self.client.post('/signup/', data={
-            'username': self.username,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'password': self.password,
-            'check_password': self.password,
-            'phone_number': self.phone_number,
-        })
+        response = self.client.post(
+            '/signup/',
+            data={
+                'username': self.username,
+                'first_name': self.first_name,
+                'last_name': self.last_name,
+                'password': self.password,
+                'check_password': self.password,
+                'phone_number': self.phone_number,
+            },
+        )
         self.assertEqual(302, response.status_code)
 
     def test_signup_form_decline(self):
-        response = self.client.post('/signup/', data={
-            'username': self.username,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'password': self.password,
-            'check_password': f'{self.password}0',
-            'phone_number': self.phone_number,
-        })
+        response = self.client.post(
+            '/signup/',
+            data={
+                'username': self.username,
+                'first_name': self.first_name,
+                'last_name': self.last_name,
+                'password': self.password,
+                'check_password': f'{self.password}0',
+                'phone_number': self.phone_number,
+            },
+        )
         self.assertEqual(200, response.status_code)
 
 
 class UserPageTestCase(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.factory = RequestFactory()
@@ -81,7 +85,6 @@ class UserPageTestCase(TestCase):
 
 
 class UpdateUserTestCase(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.user = get_user_model().objects.create_user(username='test', password='test')
@@ -96,17 +99,19 @@ class UpdateUserTestCase(TestCase):
         self.assertTrue(response.status_code == 200)
 
     def test_success(self):
-        response = self.client.post(f'/{self.user.slug}/profile/update/', data={
-            'username': 'test',
-            'first_name': 'test',
-            'last_name': 'test',
-            'phone_number': 1234567890,
-        })
+        response = self.client.post(
+            f'/{self.user.slug}/profile/update/',
+            data={
+                'username': 'test',
+                'first_name': 'test',
+                'last_name': 'test',
+                'phone_number': 1234567890,
+            },
+        )
         self.assertEqual(302, response.status_code)
 
 
 class UserCardTestCase(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.factory = RequestFactory()
@@ -158,7 +163,6 @@ class UserCardTestCase(TestCase):
 
 
 class OrderHistoryTestCase(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.user = get_user_model().objects.create_user(username='test', password='test')
@@ -178,13 +182,12 @@ class OrderHistoryTestCase(TestCase):
         ProductCategory.objects.create(category='test')
         Product.objects.create(title='test', price=10, category_id=1)
         cart = Cart.objects.create(session_key=self.user.session_key, ordered=True, user_id=self.user.id)
-        CartItem.objects.create(cart=cart, item_id=1, quantity=1, ordered=True)
+        CartItem.objects.create(cart=cart, item_id=1, quantity=1)
         response = self.client.get(f'/{self.user.username}/profile/order-history/')
         self.assertEqual(expected_result, str(response.context_data['object_list'][0]))
 
 
 class CategoryTestCase(TestCase):
-
     def setUp(self) -> None:
         self.client = Client()
         self.factory = RequestFactory()
@@ -210,7 +213,6 @@ class CategoryTestCase(TestCase):
 
 
 class ProductTestCase(TestCase):
-
     def setUp(self) -> None:
         self.client = Client()
         self.category = ProductCategory.objects.create(category='test', slug='test')
@@ -232,7 +234,6 @@ class ProductTestCase(TestCase):
 
 
 class AddToCardTestCase(TestCase):
-
     def setUp(self) -> None:
         self.client = Client()
 
@@ -268,7 +269,6 @@ class AddToCardTestCase(TestCase):
 
         [self.client.post(reverse('add_to_cart'), {'item_id': 1}) for _ in range(2)]
         result = Cart.objects.get(id=1)
-        print(result.items.all().first())
         self.assertEqual(expected_result, str(result.items.all().first()))
 
     def test_add_to_cart_two_dif_products(self):
@@ -379,23 +379,37 @@ class CheckoutTestCase(TestCase):
     def test_post_cash(self):
         expected_result = '/success/'
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        response = self.client.post(reverse('checkout'), {'first_name': 'testname', 'last_name': 'testlastname',
-                                                          'address': 'test address', 'phone_number': 1234567890,
-                                                          'payment_choice': 'Cash'})
+        response = self.client.post(
+            reverse('checkout'),
+            {
+                'first_name': 'testname',
+                'last_name': 'testlastname',
+                'address': 'test address',
+                'phone_number': 1234567890,
+                'payment_choice': 'Cash',
+            },
+        )
         self.assertEqual(expected_result, response.url)
 
     def test_post_cash_accrual_coins(self):
         expected_result = 1.0
         self.client.login(username='test', password='test')
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        request = self.factory.post(reverse('checkout'), {'first_name': 'testname', 'last_name': 'testlastname',
-                                                          'address': 'test address', 'phone_number': 1234567890,
-                                                          'payment_choice': 'Cash'})
+        request = self.factory.post(
+            reverse('checkout'),
+            {
+                'first_name': 'testname',
+                'last_name': 'testlastname',
+                'address': 'test address',
+                'phone_number': 1234567890,
+                'payment_choice': 'Cash',
+            },
+        )
         middleware = SessionMiddleware(request)
         middleware.process_request(request)
         request.session.save()
         request.user = self.user
-        response = CheckoutView.as_view()(request)
+        CheckoutView.as_view()(request)
         self.assertEqual(expected_result, self.user.bonus_coins)
 
     def test_post_bonus_coins(self):
@@ -405,9 +419,16 @@ class CheckoutTestCase(TestCase):
         self.user.save()
         self.client.login(username='test', password='test')
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        request = self.factory.post(reverse('checkout'), {'first_name': 'testname', 'last_name': 'testlastname',
-                                                          'address': 'test address', 'phone_number': 1234567890,
-                                                          'payment_choice': 'Bonus coins'})
+        request = self.factory.post(
+            reverse('checkout'),
+            {
+                'first_name': 'testname',
+                'last_name': 'testlastname',
+                'address': 'test address',
+                'phone_number': 1234567890,
+                'payment_choice': 'Bonus coins',
+            },
+        )
         middleware = SessionMiddleware(request)
         middleware.process_request(request)
         request.session.save()
@@ -419,9 +440,16 @@ class CheckoutTestCase(TestCase):
     def test_post_card(self):
         expected_result = '/create-charge/'
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        response = self.client.post(reverse('checkout'), {'first_name': 'testname', 'last_name': 'testlastname',
-                                                          'address': 'test address', 'phone_number': 1234567890,
-                                                          'payment_choice': 'Card'})
+        response = self.client.post(
+            reverse('checkout'),
+            {
+                'first_name': 'testname',
+                'last_name': 'testlastname',
+                'address': 'test address',
+                'phone_number': 1234567890,
+                'payment_choice': 'Card',
+            },
+        )
         self.assertEqual(expected_result, response.url)
 
     def test_post_error(self):
@@ -495,9 +523,15 @@ class ChargeTestCase(TestCase):
         response = self.client.post(reverse('create-charge'), {'use_default': True})
         self.assertEqual(expected_result, response.url)
 
-    @patch('stripe.Charge.create', side_effect=stripe.error.CardError(
-        'Your card was declined.', None, 'card_declined',
-        json_body={'error': {'message': 'Your card was declined.'}}))
+    @patch(
+        'stripe.Charge.create',
+        side_effect=stripe.error.CardError(
+            'Your card was declined.',
+            None,
+            'card_declined',
+            json_body={'error': {'message': 'Your card was declined.'}},
+        ),
+    )
     def test_post_card_error(self, mock_create_stripe):
         self.client.login(username='test', password='test')
         self.user.session_key = 'test_session_key'
@@ -548,7 +582,6 @@ class SuccessTestCase(TestCase):
 
 
 class RoomListTestCase(TestCase):
-
     def setUp(self) -> None:
         self.client = Client()
         Room.objects.create(room_name='test')
@@ -565,12 +598,10 @@ class RoomListTestCase(TestCase):
 
 
 class TechSupportTestCase(TestCase):
-
     def setUp(self) -> None:
         self.client = Client()
 
         self.user = get_user_model().objects.create_user(username='test', password='test')
-        # self.client.login(username='test', password='test')
         Room.objects.create(room_name='room_test')
         Messages.objects.create(room_id=1, from_user_id=1, message='test_message')
 

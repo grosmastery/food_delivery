@@ -1,15 +1,13 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from app.models import UserProfile, ProductCategory, Product, Image, CartItem, Cart
+from django.test import TestCase
+
+from app.models import Cart, CartItem, Image, Product, ProductCategory
 
 
 class UserProfileTestCase(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username='testuser',
-            password='secret',
-            address='Test Address',
-            phone_number='1234567890'
+            username='testuser', password='secret', address='Test Address', phone_number='1234567890'
         )
 
     def test_user_profile_created(self):
@@ -20,9 +18,7 @@ class UserProfileTestCase(TestCase):
 
 class ProductCategoryTestCase(TestCase):
     def setUp(self):
-        self.product_category = ProductCategory.objects.create(
-            category='Test Category'
-        )
+        self.product_category = ProductCategory.objects.create(category='Test Category')
 
     def test_product_category_created(self):
         product_category = ProductCategory.objects.get(category='Test Category')
@@ -31,15 +27,13 @@ class ProductCategoryTestCase(TestCase):
 
 class ProductTestCase(TestCase):
     def setUp(self):
-        self.product_category = ProductCategory.objects.create(
-            category='Test Category'
-        )
+        self.product_category = ProductCategory.objects.create(category='Test Category')
         self.product = Product.objects.create(
             title='Test Product',
             compound='Test Compound',
             description='Test Description',
             category=self.product_category,
-            price=100.0
+            price=100.0,
         )
 
     def test_product_created(self):
@@ -52,19 +46,15 @@ class ProductTestCase(TestCase):
 
 class ImageTestCase(TestCase):
     def setUp(self):
-        self.product_category = ProductCategory.objects.create(
-            category='Test Category'
-        )
+        self.product_category = ProductCategory.objects.create(category='Test Category')
         self.product = Product.objects.create(
             title='Test Product',
             compound='Test Compound',
             description='Test Description',
             category=self.product_category,
-            price=100.0
+            price=100.0,
         )
-        self.image = Image.objects.create(
-            product=self.product
-        )
+        self.image = Image.objects.create(product=self.product)
 
     def test_image_created(self):
         image = Image.objects.get(product=self.product)
@@ -72,18 +62,11 @@ class ImageTestCase(TestCase):
 
 
 class CartItemModelTestCase(TestCase):
-
     def setUp(self):
         self.product = Product.objects.create(
-            title='Test Product',
-            price=10.0,
-            category=ProductCategory.objects.create(category='Test Category')
+            title='Test Product', price=10.0, category=ProductCategory.objects.create(category='Test Category')
         )
-        self.cart_item = CartItem.objects.create(
-            cart=Cart.objects.create(),
-            item=self.product,
-            quantity=2
-        )
+        self.cart_item = CartItem.objects.create(cart=Cart.objects.create(), item=self.product, quantity=2)
 
     def test_get_total_price(self):
         total = self.cart_item.get_total_price()
@@ -97,27 +80,20 @@ class CartModelTestCase(TestCase):
     def setUp(self):
         # Create some test data
         User = get_user_model()
-        self.user = User.objects.create_user(
-            username='testuser', password='secret'
-        )
+        self.user = User.objects.create_user(username='testuser', password='secret')
         category = ProductCategory.objects.create(category='Test Category')
-        self.product1 = Product.objects.create(
-            title='Test Product 1', price=10.0, category=category
-        )
-        self.product2 = Product.objects.create(
-            title='Test Product 2', price=20.0, category=category
-        )
+        self.product1 = Product.objects.create(title='Test Product 1', price=10.0, category=category)
+        self.product2 = Product.objects.create(title='Test Product 2', price=20.0, category=category)
         self.cart = Cart.objects.create(
-            user=self.user, first_name='John', last_name='Doe',
-            address='123 Main St', phone_number=5555555555,
-            payment_choice='Credit Card'
+            user=self.user,
+            first_name='John',
+            last_name='Doe',
+            address='123 Main St',
+            phone_number=5555555555,
+            payment_choice='Credit Card',
         )
-        self.cartitem1 = CartItem.objects.create(
-            cart=self.cart, item=self.product1, quantity=2
-        )
-        self.cartitem2 = CartItem.objects.create(
-            cart=self.cart, item=self.product2, quantity=3
-        )
+        self.cartitem1 = CartItem.objects.create(cart=self.cart, item=self.product1, quantity=2)
+        self.cartitem2 = CartItem.objects.create(cart=self.cart, item=self.product2, quantity=3)
 
     def test_cart_get_total(self):
         # Test that the get_total method returns the correct total

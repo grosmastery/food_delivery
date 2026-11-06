@@ -1,3 +1,5 @@
+import logging
+
 import stripe
 from django.conf import settings
 from django.contrib import messages
@@ -5,19 +7,26 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import F
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
-from django.views.generic import DetailView, TemplateView, FormView, UpdateView, ListView
+from django.views.generic import DetailView, FormView, ListView, TemplateView, UpdateView
 
-from app.forms import SignUpForm, UpdateUserPersonalInfoForm, CheckoutForm, PaymentForm
-from app.models import Product, ProductCategory, Cart, CartItem, Messages, Room
-from app.utils import get_session_key, cart_data, stripe_card, stripe_amount, accrual_bonus_coins, \
-    pay_with_bonus_coins, save_cart_after_payment
+from app.forms import CheckoutForm, PaymentForm, SignUpForm, UpdateUserPersonalInfoForm
+from app.models import Cart, CartItem, Messages, PaymentChoice, Product, ProductCategory, Room
+from app.utils import (
+    accrual_bonus_coins,
+    cart_data,
+    get_session_key,
+    pay_with_bonus_coins,
+    save_cart_after_payment,
+    stripe_amount,
+    stripe_card,
+)
+
+logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
-
-"""BLOCK: USER"""
 
 
 class SignUpView(FormView):
@@ -27,7 +36,7 @@ class SignUpView(FormView):
 
     def form_valid(self, form):
         form.save()
-        return super(SignUpView, self).form_valid(form)
+        return super().form_valid(form)
 
 
 class UserPageView(LoginRequiredMixin, DetailView):
@@ -56,7 +65,7 @@ class UserCardView(LoginRequiredMixin, TemplateView):
     template_name = 'user-card.html'
 
     def get_context_data(self, **kwargs):
-        context = super(UserCardView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['STRIPE_PUBLIC_KEY'] = settings.STRIPE_PUBLIC_KEY
         try:
             context.update({'card_list': stripe_card(self.request)})
@@ -78,10 +87,7 @@ class UserCardView(LoginRequiredMixin, TemplateView):
             user.save()
         else:
             if stripe_card(request):
-                stripe.Customer.delete_source(
-                    user.stripe_customer_id,
-                    stripe_card(request)[0]['id']
-                )
+                stripe.Customer.delete_source(user.stripe_customer_id, stripe_card(request)[0]['id'])
             stripe.Customer.create_source(
                 user.stripe_customer_id,
                 source=token,
@@ -97,21 +103,15 @@ class OrderHistoryView(LoginRequiredMixin, ListView):
         return Cart.objects.filter(user=self.request.user, ordered=True).prefetch_related('items')
 
 
-"""ENDBLOCK: USER"""
-
-
 class MainView(TemplateView):
     template_name = "main.html"
-
-
-"""BLOCK: Product"""
 
 
 class CategoryView(TemplateView):
     template_name = "all-category-page.html"
 
     def get_context_data(self, **kwargs):
-        context = super(CategoryView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context["items_rating"] = Product.objects.all().order_by('-rating')[0:4]
         return context
 
@@ -132,19 +132,14 @@ class ProductInfoView(DetailView):
         return Product.objects.filter(category__slug=self.kwargs['category'])
 
 
-"""ENDBLOCK: Product"""
-
-"""BLOCK: CART"""
-
-
 class AddToCartView(View):
-
     def post(self, request):
         item = get_object_or_404(Product, id=request.POST['item_id'])
         cart = cart_data(request).first()
         if cart is None:
-            cart = Cart.objects.create(session_key=get_session_key(request),
-                                       user=request.user if request.user.is_authenticated else None)
+            cart = Cart.objects.create(
+                session_key=get_session_key(request), user=request.user if request.user.is_authenticated else None
+            )
             if not request.user.is_authenticated:
                 request.session['cart_id'] = cart.id
         order_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
@@ -155,7 +150,6 @@ class AddToCartView(View):
 
 
 class DeleteElementFromCartView(View):
-
     def post(self, request):
         item = get_object_or_404(CartItem, id=request.POST['del_item'], cart__in=cart_data(request))
         item_on_delete = CartItem.objects.filter(id=item.id)
@@ -167,7 +161,6 @@ class DeleteElementFromCartView(View):
 
 
 class DeleteAllElementsFromCartView(View):
-
     def post(self, request):
         cart = get_object_or_404(cart_data(request), id=request.POST['cart_id'])
         cart.items.all().delete()
@@ -179,36 +172,34 @@ class CartView(TemplateView):
     template_name = "cart.html"
 
 
-"""ENDBLOCK: CART"""
-
-"""BLOCK: CHECKOUT"""
-
-
 class CartRequiredMixin:
-
     def dispatch(self, request, *args, **kwargs):
         if not cart_data(request).exists():
             return redirect('/cart/')
-        return super(CartRequiredMixin, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class CheckoutView(CartRequiredMixin, TemplateView):
     template_name = 'checkout.html'
 
     def get_context_data(self, **kwargs):
-        context = super(CheckoutView, self).get_context_data(**kwargs)
-        context = {
-            'form': CheckoutForm(
-                initial={
-                    'first_name': self.request.user.first_name if self.request.user.is_authenticated else None,
-                    'last_name': self.request.user.last_name if self.request.user.is_authenticated else None,
-                    'phone_number': self.request.user.phone_number if self.request.user.is_authenticated else None,
-                    'address': self.request.user.address if self.request.user.is_authenticated else None,
-                }
-            ),
-        }
-        if self.request.user.is_authenticated and self.request.user.bonus_coins >= cart_data(
-                self.request).first().get_total():
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'form': CheckoutForm(
+                    initial={
+                        'first_name': self.request.user.first_name if self.request.user.is_authenticated else None,
+                        'last_name': self.request.user.last_name if self.request.user.is_authenticated else None,
+                        'phone_number': self.request.user.phone_number if self.request.user.is_authenticated else None,
+                        'address': self.request.user.address if self.request.user.is_authenticated else None,
+                    }
+                ),
+            }
+        )
+        if (
+            self.request.user.is_authenticated
+            and self.request.user.bonus_coins >= cart_data(self.request).first().get_total()
+        ):
             context['bonus_c'] = True
         return context
 
@@ -223,13 +214,13 @@ class CheckoutView(CartRequiredMixin, TemplateView):
             cart = cart_data(request).select_for_update().first()
             if cart is None:
                 return redirect('/cart/')
-            if payment_choice == 'Bonus coins' and not pay_with_bonus_coins(user, cart):
+            if payment_choice == PaymentChoice.BONUS_COINS and not pay_with_bonus_coins(user, cart):
                 form.add_error('payment_choice', 'Not enough bonus coins')
                 return self.form_invalid(form)
             form.save()
-            if payment_choice == 'Card':
+            if payment_choice == PaymentChoice.CARD:
                 return redirect('create-charge')
-            if payment_choice == 'Cash':
+            if payment_choice == PaymentChoice.CASH:
                 accrual_bonus_coins(user, cart)
             save_cart_after_payment(cart)
         return redirect('success')
@@ -252,11 +243,7 @@ class ChargeView(CartRequiredMixin, TemplateView):
         except IndexError:
             card = None
 
-        context = {
-            'form': CheckoutForm,
-            'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY,
-            'card': card
-        }
+        context = {'form': CheckoutForm, 'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY, 'card': card}
         return context
 
     def post(self, request):
@@ -278,14 +265,6 @@ class ChargeView(CartRequiredMixin, TemplateView):
                             description=f'Order #{cart.id}',
                         )
                     else:
-
-                        # # test payment
-                        # stripe.Charge.create(
-                        #     amount=500,
-                        #     currency="usd",
-                        #     source='tok_visa_chargeDeclined',
-                        # )
-
                         stripe.Charge.create(
                             amount=stripe_amount(cart),
                             currency="uah",
@@ -297,27 +276,26 @@ class ChargeView(CartRequiredMixin, TemplateView):
                 return redirect('/success/')
 
             except stripe.error.CardError as e:
-                print('CardError')
+                logger.info('Card declined: %s', e)
                 body = e.json_body
                 err = body.get('error', {})
                 messages.error(self.request, f"{err.get('message')}")
                 return redirect("/")
 
             except stripe.error.InvalidRequestError as e:
-                print('InvalidRequestError')
                 # Invalid parameters were supplied to Stripe's API
-                print(e)
+                logger.warning('Invalid Stripe request: %s', e)
                 messages.error(self.request, "Invalid parameters")
                 return redirect("/")
 
             except stripe.error.AuthenticationError:
-                print('AuthenticationError')
                 # Authentication with Stripe's API failed
+                logger.error('Stripe authentication failed')
                 messages.error(self.request, "Not authenticated")
                 return redirect("/")
 
             except stripe.error.StripeError:
-                print('StripeError')
+                logger.exception('Stripe error')
                 messages.error(self.request, "Something went wrong. You were not charged. Please try again.")
                 return redirect("/")
 
@@ -326,16 +304,13 @@ class SuccessView(TemplateView):
     template_name = 'success.html'
 
     def get_context_data(self, **kwargs):
-        context = super(SuccessView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['new_items'] = Product.objects.all().order_by('-added')[0:5]
         return context
 
 
 class AboutUsView(TemplateView):
     template_name = 'about-us.html'
-
-
-"""ENDBLOCK: CHECKOUT"""
 
 
 class RoomListView(ListView):
@@ -349,7 +324,7 @@ class TechSupportView(TemplateView):
     template_name = 'tech_support.html'
 
     def get_context_data(self, **kwargs):
-        context = super(TechSupportView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['room'] = get_object_or_404(Room, id=self.kwargs['room_name_id'])
         context['message'] = Messages.objects.filter(room_id=self.kwargs['room_name_id'])[:100]
         return context

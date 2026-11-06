@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.template.defaultfilters import slugify
 
@@ -31,14 +31,13 @@ class UserProfile(AbstractUser):
     phone_number = models.CharField(max_length=10)
     avatar = models.ImageField(upload_to=user_upload_to, null=True, blank=True)
     bonus_coins = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
-    order_history = models.ManyToManyField("app.Cart")
     slug = models.SlugField(unique=True)
     stripe_customer_id = models.CharField(max_length=250, null=True, blank=True)
     default_card = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         self.slug = unique_slug(self, self.username, 'user')
-        super(get_user_model(), self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class SameField(models.Model):
@@ -57,7 +56,7 @@ class ProductCategory(SameField):
 
     def save(self, *args, **kwargs):
         self.slug = unique_slug(self, self.category, 'category')
-        super(ProductCategory, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Product(SameField):
@@ -65,8 +64,9 @@ class Product(SameField):
     compound = models.CharField(max_length=150)
     description = models.CharField(max_length=200)
     category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=8, decimal_places=2,
-                                validators=[MinValueValidator(0), MaxValueValidator(250)])
+    price = models.DecimalField(
+        max_digits=8, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(250)]
+    )
     available = models.BooleanField(default=True)
     rating = models.IntegerField(default=0)
     added = models.DateTimeField(auto_now_add=True)
@@ -76,7 +76,7 @@ class Product(SameField):
 
     def save(self, *args, **kwargs):
         self.slug = unique_slug(self, self.title, 'product')
-        super(Product, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class Image(models.Model):
@@ -89,7 +89,6 @@ class Image(models.Model):
 
 class CartItem(models.Model):
     cart = models.ForeignKey('app.Cart', on_delete=models.CASCADE, related_name='items')
-    ordered = models.BooleanField(default=False)
     item = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
 
@@ -105,6 +104,12 @@ class CartItem(models.Model):
         return self.quantity * self.item.price
 
 
+class PaymentChoice(models.TextChoices):
+    CARD = 'Card', 'Card'
+    CASH = 'Cash', 'Cash'
+    BONUS_COINS = 'Bonus coins', 'Bonus coins'
+
+
 class Cart(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=True)
     ordered_date = models.DateTimeField(auto_now_add=True)
@@ -115,7 +120,7 @@ class Cart(models.Model):
     address = models.CharField(max_length=150)
     phone_number = models.CharField(max_length=10, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
-    payment_choice = models.CharField(max_length=40)
+    payment_choice = models.CharField(max_length=40, choices=PaymentChoice.choices)
 
     def __str__(self):
         return f'{self.user} || {self.ordered}'

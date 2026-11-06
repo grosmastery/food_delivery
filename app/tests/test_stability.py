@@ -2,18 +2,22 @@ from unittest.mock import patch
 
 import stripe
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from app.forms import CheckoutForm
 from app.models import Cart, Product, ProductCategory
 
-CHECKOUT_DATA = {'first_name': 'testname', 'last_name': 'testlastname', 'address': 'test address',
-                 'phone_number': '0671234567', 'payment_choice': 'Cash'}
+CHECKOUT_DATA = {
+    'first_name': 'testname',
+    'last_name': 'testlastname',
+    'address': 'test address',
+    'phone_number': '0671234567',
+    'payment_choice': 'Cash',
+}
 
 
 class LoginRequiredTestCase(TestCase):
-
     def setUp(self):
         self.user = get_user_model().objects.create_user(username='test', password='test')
         self.client = Client()
@@ -33,7 +37,6 @@ class LoginRequiredTestCase(TestCase):
 
 
 class EmptyCartTestCase(TestCase):
-
     def setUp(self):
         get_user_model().objects.create_user(username='test', password='test')
         self.client = Client()
@@ -47,7 +50,6 @@ class EmptyCartTestCase(TestCase):
 
 
 class CartOwnershipTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         self.pizza = Product.objects.create(title='pizza', price=10, category=category)
@@ -97,7 +99,6 @@ class CartOwnershipTestCase(TestCase):
 
 
 class CheckoutFormValidationTestCase(TestCase):
-
     def form(self, **data):
         return CheckoutForm(data={**CHECKOUT_DATA, **data})
 
@@ -120,13 +121,11 @@ class CheckoutFormValidationTestCase(TestCase):
 
 
 class TechSupportRoomTestCase(TestCase):
-
     def test_unknown_room_is_404(self):
         self.assertEqual(404, Client().get('/tech-support/999/').status_code)
 
 
 class StripeErrorsTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         pizza = Product.objects.create(title='pizza', price=10, category=category)

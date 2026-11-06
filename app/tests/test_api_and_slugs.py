@@ -1,16 +1,20 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
 from app.models import Cart, Product, ProductCategory
 
-CHECKOUT_DATA = {'first_name': 'Анна-Марія', 'last_name': "Мар'яненко", 'address': 'test address',
-                 'phone_number': '0671234567', 'payment_choice': 'Cash'}
+CHECKOUT_DATA = {
+    'first_name': 'Анна-Марія',
+    'last_name': "Мар'яненко",
+    'address': 'test address',
+    'phone_number': '0671234567',
+    'payment_choice': 'Cash',
+}
 
 
 class CheckoutApiValidationTestCase(TestCase):
-
     def setUp(self):
         category = ProductCategory.objects.create(category='test')
         pizza = Product.objects.create(title='pizza', price=10, category=category)
@@ -25,8 +29,12 @@ class CheckoutApiValidationTestCase(TestCase):
         self.assertEqual('0671234567', Cart.objects.get().phone_number)
 
     def test_invalid_fields_rejected(self):
-        for field, value in (('phone_number', '067123456a'), ('phone_number', ''),
-                             ('first_name', 'Anna1'), ('last_name', '-Doe')):
+        for field, value in (
+            ('phone_number', '067123456a'),
+            ('phone_number', ''),
+            ('first_name', 'Anna1'),
+            ('last_name', '-Doe'),
+        ):
             response = self.client.post('/api/checkout/', {**CHECKOUT_DATA, field: value})
             self.assertEqual(400, response.status_code, (field, value))
             self.assertIn(field, response.data)
@@ -39,7 +47,6 @@ class CheckoutApiValidationTestCase(TestCase):
 
 
 class UniqueSlugTestCase(TestCase):
-
     def setUp(self):
         self.category = ProductCategory.objects.create(category='pizza')
 

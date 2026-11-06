@@ -3,16 +3,15 @@ from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from django.test import TestCase, TransactionTestCase, Client, override_settings
+from django.test import Client, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from app.models import Cart, Product, ProductCategory, Room, Messages
+from app.models import Cart, Messages, Product, ProductCategory, Room
 from tech_support.routing import ws_routes
 
 
 class UpdateUserSecurityTestCase(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.victim = get_user_model().objects.create_user(username='victim', password='test', email='v@test.com')
@@ -25,19 +24,21 @@ class UpdateUserSecurityTestCase(TestCase):
 
     def test_cannot_update_other_user(self):
         self.client.login(username='attacker', password='test')
-        self.client.post(f'/{self.victim.slug}/profile/update/', data={
-            'username': 'attacker',
-            'first_name': 'test',
-            'last_name': 'test',
-            'phone_number': 1234567890,
-            'email': 'hacked@test.com',
-        })
+        self.client.post(
+            f'/{self.victim.slug}/profile/update/',
+            data={
+                'username': 'attacker',
+                'first_name': 'test',
+                'last_name': 'test',
+                'phone_number': 1234567890,
+                'email': 'hacked@test.com',
+            },
+        )
         self.victim.refresh_from_db()
         self.assertEqual('v@test.com', self.victim.email)
 
 
 class CartSecurityTestCase(TestCase):
-
     def setUp(self):
         ProductCategory.objects.create(category='test')
         Product.objects.create(title='test', price=1, category_id=1)
@@ -59,7 +60,6 @@ class CartSecurityTestCase(TestCase):
 
 
 class UserApiSecurityTestCase(TestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.user = get_user_model().objects.create_user(username='user', password='test')
@@ -75,9 +75,15 @@ class UserApiSecurityTestCase(TestCase):
         self.assertEqual(404, response.status_code)
 
     def test_cannot_escalate_privileges(self):
-        self.client.patch(f'/api/users/{self.user.id}/', {
-            'is_superuser': True, 'is_staff': True, 'bonus_coins': 1000, 'stripe_customer_id': 'cus_other',
-        })
+        self.client.patch(
+            f'/api/users/{self.user.id}/',
+            {
+                'is_superuser': True,
+                'is_staff': True,
+                'bonus_coins': 1000,
+                'stripe_customer_id': 'cus_other',
+            },
+        )
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_superuser)
         self.assertFalse(self.user.is_staff)
@@ -90,14 +96,18 @@ class UserApiSecurityTestCase(TestCase):
 
 
 class ProductApiSecurityTestCase(TestCase):
-
     def setUp(self):
         self.client = APIClient()
         self.user = get_user_model().objects.create_user(username='user', password='test')
         self.admin = get_user_model().objects.create_user(username='admin', password='test', is_staff=True)
         self.category = ProductCategory.objects.create(category='test')
-        self.product_data = {'title': 'new', 'compound': 'x', 'description': 'x', 'price': 1,
-                             'category': self.category.id}
+        self.product_data = {
+            'title': 'new',
+            'compound': 'x',
+            'description': 'x',
+            'price': 1,
+            'category': self.category.id,
+        }
 
     def test_user_can_read_products(self):
         self.client.force_authenticate(self.user)
@@ -121,7 +131,6 @@ class ProductApiSecurityTestCase(TestCase):
 
 @override_settings(CHANNEL_LAYERS={'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}})
 class TechSupportChatSecurityTestCase(TransactionTestCase):
-
     def setUp(self):
         self.user = get_user_model().objects.create_user(username='user', password='test')
         self.other = get_user_model().objects.create_user(username='other', password='test')
@@ -145,9 +154,14 @@ class TechSupportChatSecurityTestCase(TransactionTestCase):
     async def test_message_author_and_room_come_from_server(self):
         communicator, connected = await self.connect(self.user, self.room.id)
         self.assertTrue(connected)
-        await communicator.send_json_to({
-            'type': 'message', 'message': 'hi', 'user_id': self.other.id, 'room_id': self.other_room.id,
-        })
+        await communicator.send_json_to(
+            {
+                'type': 'message',
+                'message': 'hi',
+                'user_id': self.other.id,
+                'room_id': self.other_room.id,
+            }
+        )
         await communicator.receive_json_from()
         await communicator.disconnect()
 

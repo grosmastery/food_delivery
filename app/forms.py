@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
-from app.models import Cart
+from app.models import Cart, PaymentChoice
 from app.validators import is_valid_name, is_valid_phone_number
 from app.widgets import ImageWidget
 
@@ -38,15 +38,21 @@ class SignUpForm(UserFieldsValidationMixin):
 
     class Meta:
         model = get_user_model()
-        fields = ("avatar", "email", "address", "username", "first_name", "last_name", "phone_number", "password",
-                  "check_password")
-        widgets = {
-            "password": forms.widgets.PasswordInput(),
-            'avatar': ImageWidget()
-        }
+        fields = (
+            "avatar",
+            "email",
+            "address",
+            "username",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "password",
+            "check_password",
+        )
+        widgets = {"password": forms.widgets.PasswordInput(), 'avatar': ImageWidget()}
 
     def save(self, commit=True):
-        user = super(SignUpForm, self).save(commit=False)
+        user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
         user.save()
         return user
@@ -55,10 +61,16 @@ class SignUpForm(UserFieldsValidationMixin):
 class UpdateUserPersonalInfoForm(UserFieldsValidationMixin):
     class Meta:
         model = get_user_model()
-        fields = ("avatar", "address", "phone_number", "email", "username", "first_name", "last_name",)
-        widgets = {
-            'avatar': ImageWidget()
-        }
+        fields = (
+            "avatar",
+            "address",
+            "phone_number",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+        )
+        widgets = {'avatar': ImageWidget()}
 
 
 class PaymentForm(forms.Form):
@@ -67,13 +79,7 @@ class PaymentForm(forms.Form):
 
 
 class CheckoutForm(UserFieldsValidationMixin):
-    CHOICES = (
-        ('Card', 'Card'),
-        ('Cash', 'Cash'),
-        ('Bonus coins', 'Bonus coins')
-    )
-
-    payment_choice = forms.ChoiceField(widget=forms.RadioSelect, choices=CHOICES, required=True)
+    payment_choice = forms.ChoiceField(widget=forms.RadioSelect, choices=PaymentChoice.choices, required=True)
 
     class Meta:
         model = Cart
@@ -84,10 +90,10 @@ class CheckoutForm(UserFieldsValidationMixin):
 
     def __init__(self, cart=None, *args, **kwargs):
         self.cart = cart
-        super(CheckoutForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def save(self, commit=True, *args, **kwargs):
-        cart = super(CheckoutForm, self).save(commit=False)
+        cart = super().save(commit=False)
         cart = self.cart
         cart.update(
             first_name=self.cleaned_data.get('first_name'),

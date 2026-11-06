@@ -1,17 +1,30 @@
-from app.models import UserProfile, Product, ProductCategory, Cart, CartItem, Image, Messages, Room
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
+
+from app.models import Cart, CartItem, Image, Messages, Product, ProductCategory, Room, UserProfile
 
 
 @admin.register(UserProfile)
 class UserProfileAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        (_("Personal info"), {"fields": (
-            "first_name", "last_name", "email", "address", "avatar", "phone_number", "stripe_customer_id",
-            "default_card")}),
+        (
+            _("Personal info"),
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "address",
+                    "avatar",
+                    "phone_number",
+                    "stripe_customer_id",
+                    "default_card",
+                )
+            },
+        ),
         (_("User bonus coins"), {"fields": ("bonus_coins",)}),
         (_("Permissions"), {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
@@ -23,8 +36,7 @@ class UserProfileAdmin(UserAdmin):
 
 @admin.register(ProductCategory)
 class ProductCategoryAdmin(admin.ModelAdmin):
-    fieldsets = (
-        (None, {"fields": ("category", "main_image")}),)
+    fieldsets = ((None, {"fields": ("category", "main_image")}),)
 
 
 class CartItemInline(admin.TabularInline):
@@ -41,7 +53,7 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('item', 'quantity', 'ordered')
+    list_display = ('item', 'quantity', 'cart')
 
 
 class ImageAdmin(admin.StackedInline):
@@ -52,8 +64,11 @@ class ImageAdmin(admin.StackedInline):
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'rating', 'available')
     fieldsets = (
-        (None,
-         {"fields": ("title", "compound", "description", "price", "category", "main_image", "rating", "available")}),)
+        (
+            None,
+            {"fields": ("title", "compound", "description", "price", "category", "main_image", "rating", "available")},
+        ),
+    )
 
     readonly_fields = ('added',)
 

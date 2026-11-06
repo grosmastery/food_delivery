@@ -1,9 +1,7 @@
-from abc import ABC
-
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from app.models import ProductCategory, Product, Cart
+from app.models import Cart, PaymentChoice, Product, ProductCategory
 from app.validators import is_valid_name, is_valid_phone_number
 
 
@@ -17,9 +15,7 @@ class ProductCategorySerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
-        exclude = (
-            'avatar', 'slug', 'order_history', 'groups', 'user_permissions', 'date_joined', 'last_login', 'password',
-            'is_active')
+        exclude = ('avatar', 'slug', 'groups', 'user_permissions', 'date_joined', 'last_login', 'password', 'is_active')
         read_only_fields = ('is_staff', 'is_superuser', 'bonus_coins', 'stripe_customer_id', 'default_card')
 
 
@@ -36,13 +32,7 @@ class CreateProductSerializer(serializers.ModelSerializer):
 
 
 class CheckoutSerializer(serializers.ModelSerializer):
-    CHOICES = (
-        ('Card', 'Card'),
-        ('Cash', 'Cash'),
-        ('Bonus coins', 'Bonus coins')
-    )
-
-    payment_choice = serializers.ChoiceField(choices=CHOICES, required=True)
+    payment_choice = serializers.ChoiceField(choices=PaymentChoice.choices, required=True)
 
     class Meta:
         model = Cart
@@ -68,7 +58,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
     def __init__(self, cart=None, *args, **kwargs):
         self.cart = cart
-        super(CheckoutSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def save(self, commit=True, *args, **kwargs):
         cart = self.cart

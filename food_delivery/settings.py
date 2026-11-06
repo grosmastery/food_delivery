@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+
 import os
 from pathlib import Path
 
@@ -52,8 +53,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'rest_framework',
     'rest_framework.authtoken',
-    'channels'
-
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -72,8 +72,7 @@ ROOT_URLCONF = 'food_delivery.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'app/templates']
-        ,
+        'DIRS': [BASE_DIR / 'app/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,9 +134,7 @@ STATIC_URL = 'static/'
 
 STATIC_ROOT = BASE_DIR / 'static_files'
 
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "static"),
-)
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 
 MEDIA_URL = '/media/'
 
@@ -152,18 +149,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'app.UserProfile'
 
-JAZZMIN_SETTINGS = {
-    "show_ui_builder": True
-}
+JAZZMIN_SETTINGS = {"show_ui_builder": True}
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 INTERNAL_IPS = [
-    # ...
     "127.0.0.1",
-    # ...
 ]
 
 STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY')
@@ -180,11 +173,10 @@ MESSAGE_TAGS = {
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-        # 'api.permissions.IsApiKeyProvided'
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication'
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'COERCE_DECIMAL_TO_STRING': False,
 }
@@ -195,5 +187,19 @@ CHANNEL_LAYERS = {
         'CONFIG': {
             "hosts": [env('REDIS_URL', default='redis://127.0.0.1:6379')],
         },
+    },
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': env('LOG_LEVEL', default='WARNING'),
     },
 }
