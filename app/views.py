@@ -14,19 +14,24 @@ from django.views.generic import DetailView, FormView, ListView, TemplateView, U
 
 from app.forms import CheckoutForm, PaymentForm, SignUpForm, UpdateUserPersonalInfoForm
 from app.models import Cart, CartItem, Messages, PaymentChoice, Product, ProductCategory, Room
+from app.payments import (
+    AUTOMATIC_PAYMENT_METHODS,
+    confirm_payment_intent,
+    get_or_create_customer,
+    is_paid,
+    needs_authentication,
+    prepare_payment_intent,
+    saved_card,
+)
 from app.utils import (
     accrual_bonus_coins,
     cart_data,
     get_session_key,
     pay_with_bonus_coins,
     save_cart_after_payment,
-    stripe_amount,
-    stripe_card,
 )
 
 logger = logging.getLogger(__name__)
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class SignUpView(FormView):
@@ -44,9 +49,7 @@ class UserPageView(LoginRequiredMixin, DetailView):
 
     def get_object(self, queryset=None):
         if self.request.user.default_card:
-            # stripe_card - function from utils.py
-            cards = stripe_card(self.request)
-            return cards[0] if cards else None
+            return saved_card(self.request.user)
 
 
 class UpdateUserPersonalInfoView(LoginRequiredMixin, UpdateView):
@@ -66,34 +69,47 @@ class UserCardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['STRIPE_PUBLIC_KEY'] = settings.STRIPE_PUBLIC_KEY
+        user = self.request.user
+        setup_intent = stripe.SetupIntent.create(
+            customer=get_or_create_customer(user),
+            automatic_payment_methods=AUTOMATIC_PAYMENT_METHODS,
+            usage='on_session',
+        )
+        context.update(
+            {
+                'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY,
+                'client_secret': setup_intent.client_secret,
+                'card': saved_card(user),
+            }
+        )
+        return context
+
+    def get(self, request, *args, **kwargs):
         try:
-            context.update({'card_list': stripe_card(self.request)})
-            return context
-        except TypeError:
-            return context
+            return super().get(request, *args, **kwargs)
+        except stripe.StripeError:
+            logger.exception('Could not start card setup')
+            messages.error(request, "Card service is unavailable. Please try again later.")
+            return redirect(f'/{request.user.slug}/profile/')
 
     def post(self, request):
         user = request.user
-        token = request.POST['stripeToken']
-        if not user.stripe_customer_id:
-            customer = stripe.Customer.create(
-                email=user.email,
-                name=f'{user.first_name} {user.last_name}',
-                source=token,
-            )
-            user.stripe_customer_id = customer['id']
-            user.default_card = True
-            user.save()
-        else:
-            if stripe_card(request):
-                stripe.Customer.delete_source(user.stripe_customer_id, stripe_card(request)[0]['id'])
-            stripe.Customer.create_source(
-                user.stripe_customer_id,
-                source=token,
-            )
-            user.save()
-        return redirect(f'/{request.user.slug}/profile/')
+        try:
+            setup_intent = stripe.SetupIntent.retrieve(request.POST.get('setup_intent_id', ''))
+            if setup_intent.customer != user.stripe_customer_id or setup_intent.status != 'succeeded':
+                messages.error(request, "Card was not saved. Please try again.")
+                return redirect('update_card')
+            methods = stripe.Customer.list_payment_methods(user.stripe_customer_id, type='card')
+            for method in methods.auto_paging_iter():
+                if method.id != setup_intent.payment_method:
+                    stripe.PaymentMethod.detach(method.id)
+        except stripe.StripeError:
+            logger.exception('Could not save card')
+            messages.error(request, "Card was not saved. Please try again.")
+            return redirect('update_card')
+        user.default_card = True
+        user.save(update_fields=['default_card'])
+        return redirect(f'/{user.slug}/profile/')
 
 
 class OrderHistoryView(LoginRequiredMixin, ListView):
@@ -174,7 +190,7 @@ class CartView(TemplateView):
 
 class CartRequiredMixin:
     def dispatch(self, request, *args, **kwargs):
-        if not cart_data(request).exists():
+        if request.method == 'GET' and not cart_data(request).exists():
             return redirect('/cart/')
         return super().dispatch(request, *args, **kwargs)
 
@@ -236,68 +252,84 @@ class ChargeView(CartRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         user = self.request.user
-
-        # if card was deleted by stipe platform
-        try:
-            card = stripe_card(self.request)[0] if user.is_authenticated and user.default_card else None
-        except IndexError:
-            card = None
-
-        context = {'form': CheckoutForm, 'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY, 'card': card}
-        return context
+        card = saved_card(user) if user.is_authenticated and user.default_card else None
+        return {'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY, 'card': card}
 
     def post(self, request):
+        form = PaymentForm(request.POST)
+        form.is_valid()
         user = request.user
-        form = PaymentForm(self.request.POST)
-        if form.is_valid():
-            token = form.cleaned_data.get('stripeToken')
-            use_default = form.cleaned_data.get('use_default')
-            try:
-                with transaction.atomic():
-                    cart = cart_data(self.request).select_for_update().first()
-                    if cart is None:
-                        return redirect('/cart/')
-                    if use_default:
-                        stripe.Charge.create(
-                            amount=stripe_amount(cart),
-                            currency="uah",
-                            customer=user.stripe_customer_id,
-                            description=f'Order #{cart.id}',
-                        )
-                    else:
-                        stripe.Charge.create(
-                            amount=stripe_amount(cart),
-                            currency="uah",
-                            source=token,
-                            description=f'Order #{cart.id}',
-                        )
-                    accrual_bonus_coins(user, cart)
-                    save_cart_after_payment(cart)
-                return redirect('/success/')
+        with transaction.atomic():
+            cart = cart_data(request).select_for_update().first()
+            if cart is None:
+                return JsonResponse({'redirect': '/cart/'})
 
-            except stripe.error.CardError as e:
-                logger.info('Card declined: %s', e)
-                body = e.json_body
-                err = body.get('error', {})
-                messages.error(self.request, f"{err.get('message')}")
-                return redirect("/")
+            if form.cleaned_data.get('use_default'):
+                card = saved_card(user)
+                payment_method = card['id'] if card else None
+            else:
+                payment_method = form.cleaned_data.get('payment_method_id')
+            if not payment_method:
+                return JsonResponse({'error': 'Please enter your card details.'}, status=400)
 
-            except stripe.error.InvalidRequestError as e:
-                # Invalid parameters were supplied to Stripe's API
-                logger.warning('Invalid Stripe request: %s', e)
-                messages.error(self.request, "Invalid parameters")
-                return redirect("/")
+            return stripe_payment(
+                user, cart, lambda: confirm_payment_intent(prepare_payment_intent(cart, user), payment_method)
+            )
 
-            except stripe.error.AuthenticationError:
-                # Authentication with Stripe's API failed
-                logger.error('Stripe authentication failed')
-                messages.error(self.request, "Not authenticated")
-                return redirect("/")
 
-            except stripe.error.StripeError:
-                logger.exception('Stripe error')
-                messages.error(self.request, "Something went wrong. You were not charged. Please try again.")
-                return redirect("/")
+class ChargeConfirmView(View):
+    def post(self, request):
+        user = request.user
+        with transaction.atomic():
+            cart = cart_data(request).select_for_update().first()
+            if cart is None:
+                return JsonResponse({'redirect': '/cart/'})
+            if not cart.stripe_payment_intent_id:
+                return JsonResponse({'error': 'Payment not found. Please try again.'}, status=400)
+
+            return stripe_payment(
+                user,
+                cart,
+                lambda: stripe.PaymentIntent.retrieve(cart.stripe_payment_intent_id),
+                allow_authentication=False,
+            )
+
+
+def stripe_payment(user, cart, pay, allow_authentication=True):
+    try:
+        intent = pay()
+    except stripe.CardError as e:
+        logger.info('Card declined: %s', e)
+        return JsonResponse({'error': e.user_message or "Your card was declined."}, status=402)
+    except stripe.InvalidRequestError as e:
+        if e.code == 'amount_too_small':
+            return JsonResponse(
+                {'error': "Order total is too small for card payment. Please add more items or pay in cash."},
+                status=400,
+            )
+        # Invalid parameters were supplied to Stripe's API
+        logger.warning('Invalid Stripe request: %s', e)
+        return JsonResponse({'error': "Invalid payment details."}, status=400)
+    except stripe.AuthenticationError:
+        # Authentication with Stripe's API failed
+        logger.error('Stripe authentication failed')
+        return JsonResponse({'error': "Payment service is unavailable."}, status=503)
+    except stripe.StripeError:
+        logger.exception('Stripe error')
+        return JsonResponse({'error': "Something went wrong. You were not charged. Please try again."}, status=502)
+
+    if needs_authentication(intent):
+        if allow_authentication:
+            return JsonResponse({'requires_action': True, 'client_secret': intent.client_secret})
+        return JsonResponse({'error': "Card authentication was not completed. Please try again."}, status=402)
+    if is_paid(intent, cart):
+        accrual_bonus_coins(user, cart)
+        save_cart_after_payment(cart)
+        return JsonResponse({'redirect': '/success/'})
+    if intent.status == 'succeeded':
+        logger.error('PaymentIntent %s does not match cart %s', intent.id, cart.id)
+        return JsonResponse({'error': "Payment does not match your order. Please contact support."}, status=409)
+    return JsonResponse({'error': "Payment failed. Please try another card."}, status=402)
 
 
 class SuccessView(TemplateView):

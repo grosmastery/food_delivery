@@ -1,6 +1,5 @@
 from decimal import ROUND_DOWN, Decimal
 
-import stripe
 from django.contrib.auth import get_user_model
 from django.db.models import F
 
@@ -40,11 +39,6 @@ def merge_anonymous_cart(request, user):
             user_item.quantity = F('quantity') + cart_item.quantity
             user_item.save(update_fields=['quantity'])
     anonymous_cart.delete()
-
-
-def stripe_card(request):
-    cards = stripe.Customer.list_sources(request.user.stripe_customer_id, object='card')
-    return cards['data']
 
 
 def stripe_amount(cart):

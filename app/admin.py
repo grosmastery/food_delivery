@@ -47,7 +47,7 @@ class CartItemInline(admin.TabularInline):
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
     list_display = ('user', 'ordered')
-    readonly_fields = ('session_key',)
+    readonly_fields = ('session_key', 'stripe_payment_intent_id')
     inlines = [CartItemInline]
 
 

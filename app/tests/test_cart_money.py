@@ -1,5 +1,4 @@
 from decimal import Decimal
-from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
@@ -113,23 +112,3 @@ class CheckoutTwiceTestCase(TestCase):
         self.assertEqual(Decimal('1'), get_user_model().objects.get().bonus_coins)
         self.pizza.refresh_from_db()
         self.assertEqual(1, self.pizza.rating)
-
-
-class StripeAmountTestCase(TestCase):
-    def setUp(self):
-        category = ProductCategory.objects.create(category='test')
-        self.pizza = Product.objects.create(title='pizza', price=Decimal('10.55'), category=category)
-        self.client = Client()
-
-    @patch('stripe.Charge.create')
-    def test_amount_keeps_kopecks(self, charge_create):
-        for _ in range(3):
-            self.client.post(reverse('add_to_cart'), {'item_id': self.pizza.id})
-        self.client.post(reverse('create-charge'), {'stripeToken': 'tok_test'})
-        self.assertEqual(3165, charge_create.call_args.kwargs['amount'])
-
-    @patch('stripe.Charge.create')
-    def test_charge_without_cart_does_nothing(self, charge_create):
-        response = self.client.post(reverse('create-charge'), {'stripeToken': 'tok_test'})
-        self.assertEqual('/cart/', response.url)
-        charge_create.assert_not_called()

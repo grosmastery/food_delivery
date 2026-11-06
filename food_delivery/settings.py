@@ -39,6 +39,7 @@ ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'jazzmin',
     'app',
     'django.contrib.admin',
@@ -158,6 +159,14 @@ LOGOUT_REDIRECT_URL = "/"
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+DEBUG_TOOLBAR_CONFIG = {
+    "DISABLE_PANELS": {
+        "debug_toolbar.panels.profiling.ProfilingPanel",
+        "debug_toolbar.panels.redirects.RedirectsPanel",
+        "debug_toolbar.panels.templates.TemplatesPanel",
+    },
+}
 
 STRIPE_PUBLIC_KEY = env('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY')

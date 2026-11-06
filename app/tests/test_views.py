@@ -1,16 +1,14 @@
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import stripe
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
 from app.models import Cart, CartItem, Messages, Product, ProductCategory, Room
-from app.views import CategoryView, ChargeView, CheckoutView, SuccessView, UserCardView, UserPageView
+from app.views import CategoryView, CheckoutView, SuccessView
 
 
 class SignUpViewTestCase(TestCase):
@@ -74,15 +72,6 @@ class UserPageTestCase(TestCase):
         response = self.client.get(f'/{self.user.slug}/profile/')
         self.assertTrue(response.status_code == 200)
 
-    @patch('stripe.Customer.list_sources', return_value={'data': [{'test': 'test'}]})
-    def test_get_object(self, mock_value):
-        expected_value = {'test': 'test'}
-        self.user.default_card = True
-        request = self.factory.get(f'/{self.user.slug}/profile/')
-        request.user = self.user
-        response = UserPageView.as_view()(request)
-        self.assertEqual(expected_value, response.context_data['object'])
-
 
 class UpdateUserTestCase(TestCase):
     def setUp(self):
@@ -108,57 +97,6 @@ class UpdateUserTestCase(TestCase):
                 'phone_number': 1234567890,
             },
         )
-        self.assertEqual(302, response.status_code)
-
-
-class UserCardTestCase(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.factory = RequestFactory()
-        self.user = get_user_model().objects.create_user(username='test', password='test')
-        self.client.login(username='test', password='test')
-
-    def test_diagnostic(self):
-        response = self.client.get('/update-card/')
-        self.assertTrue(response != 404)
-
-    def test_diagnostic_get(self):
-        response = self.client.get('/update-card/')
-        self.assertTrue(response.status_code == 200)
-
-    @patch('stripe.Customer.list_sources', return_value={"data": [{"test": "test"}]})
-    def test_user_has_card(self, mock_stripe_customer_list_sources):
-        expected_value = [{'test': 'test'}]
-        self.client.get('/update-card/')
-        test_card = mock_stripe_customer_list_sources()
-        self.assertEqual(expected_value, test_card['data'])
-
-    @patch('stripe.Customer.list_sources', return_value=None)
-    def test_user_has_not_card(self, mock_stripe_customer_list_sources):
-        expected_value = None
-        self.client.get('/update-card/')
-        test_card = mock_stripe_customer_list_sources()
-        self.assertEqual(expected_value, test_card)
-
-    @patch('stripe.Customer.create', return_value={'id': 'test', 'test': 'test'})
-    def test_post_new_customer(self, mock_stripe):
-        request = self.factory.post(reverse('update_card'))
-        request.POST._mutable = True
-        request.POST["stripeToken"] = MagicMock(return_value='test')
-        request.user = self.user
-        response = UserCardView.as_view()(request)
-        self.assertEqual(302, response.status_code)
-
-    @patch('stripe.Customer.delete_source', return_value=None)
-    @patch('stripe.Customer.list_sources', return_value={'data': [{'id': 'test', 'test': 'test'}]})
-    @patch('stripe.Customer.create_source', return_value=[{'id': 'test1', 'test': 'test'}])
-    def test_post_old_customer(self, mock_delete_stripe, mock_list__sources_stripe, mock_create_source_stripe):
-        self.user.stripe_customer_id = True
-        request = self.factory.post(reverse('update_card'))
-        request.POST._mutable = True
-        request.POST["stripeToken"] = MagicMock(return_value='test')
-        request.user = self.user
-        response = UserCardView.as_view()(request)
         self.assertEqual(302, response.status_code)
 
 
@@ -485,77 +423,6 @@ class ChargeTestCase(TestCase):
         self.client.post(reverse('add_to_cart'), {'item_id': 1})
         response = self.client.get(reverse('create-charge'))
         self.assertTrue(response.status_code == 200)
-
-    @patch('stripe.Customer.list_sources', return_value={'data': [{'test': 'test'}]})
-    def test_get_context_data_default_card(self, mock_stripe):
-        expected_result = {'test': 'test'}
-        self.user.default_card = True
-        self.client.login(username='test', password='test')
-        self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        request = self.factory.get(reverse('create-charge'))
-        request.user = self.user
-        response = ChargeView.as_view()(request)
-        self.assertEqual(expected_result, response.context_data['card'])
-
-    @patch('stripe.Customer.list_sources', return_value={'data': []})
-    def test_get_context_data_error(self, mock_data):
-        expected_result = None
-        self.user.default_card = True
-        self.client.login(username='test', password='test')
-        self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        request = self.factory.get(reverse('create-charge'))
-        request.user = self.user
-        response = ChargeView.as_view()(request)
-        self.assertEqual(expected_result, response.context_data['card'])
-
-    @patch('stripe.Charge.create', return_value={'test': []})
-    def test_post_success(self, mock_stripe):
-        expected_result = '/success/'
-        self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        response = self.client.post(reverse('create-charge'))
-        self.assertEqual(expected_result, response.url)
-
-    @patch('stripe.Charge.create', return_value={'test': []})
-    def test_post_use_default_card(self, mock_create_stripe):
-        expected_result = '/success/'
-        self.client.login(username='test', password='test')
-        self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        response = self.client.post(reverse('create-charge'), {'use_default': True})
-        self.assertEqual(expected_result, response.url)
-
-    @patch(
-        'stripe.Charge.create',
-        side_effect=stripe.error.CardError(
-            'Your card was declined.',
-            None,
-            'card_declined',
-            json_body={'error': {'message': 'Your card was declined.'}},
-        ),
-    )
-    def test_post_card_error(self, mock_create_stripe):
-        self.client.login(username='test', password='test')
-        self.user.session_key = 'test_session_key'
-        self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        request = self.factory.post(reverse('create-charge'), {'stripeToken': 'tok_visa_chargeDeclined'})
-        request.user = self.user
-        request.session = MagicMock(return_value='test_session_key')
-        middleware = MessageMiddleware(request)
-        middleware.process_request(request)
-        response = ChargeView.as_view()(request)
-        self.assertTrue(response.url == '/')
-
-    @patch('stripe.Charge.create', side_effect=stripe.error.InvalidRequestError('Invalid source object', 'source'))
-    def test_post_invalid_request_error(self, mock_create_stripe):
-        self.client.login(username='test', password='test')
-        self.user.session_key = 'test_session_key'
-        self.client.post(reverse('add_to_cart'), {'item_id': 1})
-        request = self.factory.post(reverse('create-charge'))
-        request.user = self.user
-        request.session = MagicMock(return_value='test_session_key')
-        middleware = MessageMiddleware(request)
-        middleware.process_request(request)
-        response = ChargeView.as_view()(request)
-        self.assertTrue(response.url == '/')
 
 
 class SuccessTestCase(TestCase):

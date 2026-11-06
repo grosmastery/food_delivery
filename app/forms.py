@@ -74,7 +74,7 @@ class UpdateUserPersonalInfoForm(UserFieldsValidationMixin):
 
 
 class PaymentForm(forms.Form):
-    stripeToken = forms.CharField(required=False)
+    payment_method_id = forms.CharField(required=False)
     use_default = forms.BooleanField(required=False)
 
 

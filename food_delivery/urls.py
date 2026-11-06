@@ -45,6 +45,7 @@ urlpatterns = (
         path('cart/', views.CartView.as_view()),
         path('checkout/', views.CheckoutView.as_view(), name='checkout'),
         path('create-charge/', views.ChargeView.as_view(), name='create-charge'),
+        path('create-charge/confirm/', views.ChargeConfirmView.as_view(), name='confirm-charge'),
         path('success/', views.SuccessView.as_view(), name='success'),
     ]
     + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

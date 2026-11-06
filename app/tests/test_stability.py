@@ -7,6 +7,7 @@ from django.urls import reverse
 
 from app.forms import CheckoutForm
 from app.models import Cart, Product, ProductCategory
+from app.tests.stripe_objects import card_list
 
 CHECKOUT_DATA = {
     'first_name': 'testname',
@@ -28,7 +29,7 @@ class LoginRequiredTestCase(TestCase):
             self.assertEqual(302, response.status_code, url)
             self.assertTrue(response.url.startswith('/login/'), url)
 
-    @patch('stripe.Customer.list_sources', return_value={'data': []})
+    @patch('stripe.Customer.list_payment_methods', return_value=card_list())
     def test_profile_when_default_card_was_removed(self, list_sources):
         self.user.default_card = True
         self.user.save()
@@ -132,8 +133,27 @@ class StripeErrorsTestCase(TestCase):
         self.client = Client()
         self.client.post(reverse('add_to_cart'), {'item_id': pizza.id})
 
-    @patch('stripe.Charge.create', side_effect=stripe.error.APIConnectionError('down'))
-    def test_generic_stripe_error_handled(self, charge_create):
-        response = self.client.post(reverse('create-charge'), {'stripeToken': 'tok_test'})
-        self.assertEqual('/', response.url)
+    @patch('stripe.PaymentIntent.create', side_effect=stripe.APIConnectionError('down'))
+    def test_generic_stripe_error_handled(self, intent_create):
+        response = self.client.post(reverse('create-charge'), {'payment_method_id': 'pm_card_visa'})
+        self.assertEqual(502, response.status_code)
+        self.assertIn('error', response.json())
         self.assertFalse(Cart.objects.get().ordered)
+
+
+class LogoutTestCase(TestCase):
+    def setUp(self):
+        get_user_model().objects.create_user(username='test', password='test')
+        self.client = Client()
+        self.client.login(username='test', password='test')
+
+    def test_logout_form_is_not_nested(self):
+        html = self.client.get('/').content.decode()
+        navbar = html[html.index('<nav') : html.index('</nav>')]
+        self.assertEqual(1, navbar.count('<form'))
+        self.assertIn('action="/logout/"', navbar)
+
+    def test_logout_with_post(self):
+        self.assertEqual(405, self.client.get('/logout/').status_code)
+        self.client.post('/logout/')
+        self.assertNotIn('_auth_user_id', self.client.session)

@@ -121,6 +121,7 @@ class Cart(models.Model):
     phone_number = models.CharField(max_length=10, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
     payment_choice = models.CharField(max_length=40, choices=PaymentChoice.choices)
+    stripe_payment_intent_id = models.CharField(max_length=255, null=True, blank=True, editable=False)
 
     def __str__(self):
         return f'{self.user} || {self.ordered}'
