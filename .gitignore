@@ -9,3 +9,4 @@ media/
 .gitignore.bak
 static_files/
 data/
+.claude/
