@@ -32,6 +32,7 @@ urlpatterns = (
         path('<slug:slug>/profile/update/', views.UpdateUserPersonalInfoView.as_view()),
         path('update-card/', views.UserCardView.as_view(), name='update_card'),
         path('<slug:slug>/profile/order-history/', views.OrderHistoryView.as_view()),
+        path('search/', views.SearchView.as_view(), name='search'),
         path('category/', views.CategoryView.as_view()),
         path('category/<slug:slug>/', views.ProductView.as_view(), name='product_list'),
         path('category/<slug:category>/<slug:slug>/', views.ProductInfoView.as_view(), name='product_info'),

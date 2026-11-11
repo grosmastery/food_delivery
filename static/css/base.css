@@ -335,6 +335,62 @@ a {
     border-color: rgba(57, 57, 95, .2);
 }
 
+.navbar-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: .5rem 1rem .5rem 0;
+}
+
+.navbar-search svg {
+    position: absolute;
+    left: .85rem;
+    color: var(--fd-navy);
+    opacity: .6;
+    pointer-events: none;
+}
+
+.navbar-search .form-control {
+    width: 240px;
+    padding-left: 2.3rem;
+    border: none;
+    border-radius: 999px;
+    background-color: var(--fd-beige);
+    color: var(--fd-navy);
+}
+
+.navbar-search .form-control::placeholder {
+    color: rgba(57, 57, 95, .6);
+}
+
+.navbar-search .form-control:focus {
+    box-shadow: 0 0 0 .2rem rgba(169, 194, 93, .6);
+}
+
+@media (max-width: 991.98px) {
+    .navbar-search {
+        margin-right: 0;
+    }
+
+    .navbar-search .form-control {
+        width: 100%;
+    }
+}
+
+.pagination-fd .page-link {
+    color: var(--fd-navy);
+    border: none;
+    border-radius: 8px;
+    margin: 0 .2rem;
+    background-color: #fff;
+    box-shadow: var(--fd-shadow);
+}
+
+.pagination-fd .page-item.active .page-link {
+    background-color: var(--fd-green);
+    color: #fff;
+}
+
 .navbar-actions {
     display: flex;
     align-items: center;

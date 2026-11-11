@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 import stripe
@@ -150,7 +151,11 @@ class LogoutTestCase(TestCase):
     def test_logout_form_is_not_nested(self):
         html = self.client.get('/').content.decode()
         navbar = html[html.index('<nav') : html.index('</nav>')]
-        self.assertEqual(1, navbar.count('<form'))
+        depth = 0
+        for tag in re.findall(r'<(/?)form\b', navbar):
+            depth += -1 if tag else 1
+            self.assertIn(depth, (0, 1))
+        self.assertEqual(0, depth)
         self.assertIn('action="/logout/"', navbar)
 
     def test_logout_with_post(self):

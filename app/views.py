@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
@@ -142,6 +142,30 @@ class ProductView(ListView):
     def get_queryset(self):
         category = ProductCategory.objects.filter(slug=self.kwargs['slug']).first()
         return Product.objects.filter(category=category)
+
+
+class SearchView(ListView):
+    template_name = "search.html"
+    paginate_by = 12
+
+    def get_queryset(self):
+        self.query = self.request.GET.get('q', '').strip()[:100]
+        if not self.query:
+            return Product.objects.none()
+        return (
+            Product.objects.filter(
+                Q(title__icontains=self.query)
+                | Q(compound__icontains=self.query)
+                | Q(category__category__icontains=self.query)
+            )
+            .select_related('category')
+            .order_by('-rating', 'title')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['query'] = self.query
+        return context
 
 
 class ProductInfoView(DetailView):
